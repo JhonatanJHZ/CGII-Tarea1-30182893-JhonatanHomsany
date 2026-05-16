@@ -1,4 +1,7 @@
 #include "../include/Tarea1-30182893-JhonatanHomsany.h"
+#include "../include/UIManager.h"
+#include "../include/GLFWManager.h"
+#include "../include/Shader.h"
 
 #include <iostream>
 #include <fstream>
@@ -14,50 +17,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h>
-
 using namespace std;
-
-// --- Shaders ---
-const char* vertexShaderSource = R"(
-#version 330 core
-layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec3 aNormal;
-
-out vec3 Normal;
-
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
-
-void main() {
-    gl_Position = projection * view * model * vec4(aPos, 1.0);
-    Normal = aNormal;
-}
-)";
-
-const char* fragmentShaderSource = R"(
-#version 330 core
-out vec4 FragColor;
-in vec3 Normal;
-
-void main() {
-    // Iluminación básica basada en la normal
-    vec3 color = Normal * 0.5 + 0.5;
-    FragColor = vec4(color, 1.0);
-}
-)";
 
 struct Vertex {
     glm::vec3 position;
     glm::vec3 normal;
 };
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-    glViewport(0, 0, width, height);
-}
 
 // LECTOR DE OBJ
 bool loadSimpleOBJ(const char* path, std::vector<Vertex>& out_vertices) {
@@ -123,41 +88,16 @@ bool loadSimpleOBJ(const char* path, std::vector<Vertex>& out_vertices) {
 }
 
 int main() {
-    if (!glfwInit()) return -1;
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Tarea 1 - Cubo Rubik", NULL, NULL);
+    GLFWManager* glfwManager = new GLFWManager();
+    GLFWwindow* window = glfwManager->createWindow(800, 600, "Tarea 1 - Cubo Rubik");
     if (!window) {
-        glfwTerminate();
-        return -1;
-    }
-    glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        std::cerr << "Fallo al inicializar GLAD" << std::endl;
         return -1;
     }
 
     glEnable(GL_DEPTH_TEST);
 
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-
-    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-
-    unsigned int shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
+    Shader* shader = new Shader("../../../Tarea1-30182893-JhonatanHomsany/shaders/default.vert", "../../../Tarea1-30182893-JhonatanHomsany/shaders/default.frag");
+    unsigned int shaderProgram = shader->ID;
 
     std::vector<Vertex> vertices;
     // La ruta ahora apuntará a la carpeta assets de ESTE proyecto
@@ -202,29 +142,17 @@ int main() {
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
     glEnableVertexAttribArray(1);
 
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    ImGui::StyleColorsDark();
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 330");
+    UIManager* uiManager = new UIManager(window);
 
     float rotationSpeed = 1.0f;
     float scale = 0.1f;
 
-    while (!glfwWindowShouldClose(window)) {
+    while (!glfwManager->shouldClose()) {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
-        ImGui::Begin("Controles del Rubik");
-        ImGui::SliderFloat("Velocidad de Rotacion", &rotationSpeed, 0.0f, 5.0f);
-        ImGui::SliderFloat("Escala", &scale, 0.01f, 2.0f);
-        ImGui::Text("Vertices cargados: %zu", vertices.size());
-        ImGui::End();
+        uiManager->newFrame();
+        uiManager->drawInspector();
 
         glUseProgram(shaderProgram);
 
@@ -235,7 +163,7 @@ int main() {
         glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -8.0f));
 
         int display_w, display_h;
-        glfwGetFramebufferSize(window, &display_w, &display_h);
+        glfwManager->getFrameBufferSize(&display_w, &display_h);
         display_h = std::max(1, display_h);
         float aspect = (float)display_w / (float)display_h;
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
@@ -247,21 +175,15 @@ int main() {
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, (GLsizei)vertices.size());
 
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+        uiManager->render();
+        glfwManager->update();
     }
-
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
 
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
-    glDeleteProgram(shaderProgram);
+    delete uiManager;
+    //delete shader;
+    delete glfwManager;
 
-    glfwTerminate();
     return 0;
 }
