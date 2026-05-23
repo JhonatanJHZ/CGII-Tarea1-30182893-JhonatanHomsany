@@ -14,6 +14,62 @@
 #include <algorithm>
 #include <iostream>
 
+void drawSelectionBox(const SceneObject* obj, const glm::mat4& view, const glm::mat4& projection, Shader* shader) {
+    if (!obj || !shader) return;
+    glm::vec3 c[8] = {
+        glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3( 1.0f, -1.0f, -1.0f),
+        glm::vec3( 1.0f,  1.0f, -1.0f), glm::vec3(-1.0f,  1.0f, -1.0f),
+        glm::vec3(-1.0f, -1.0f,  1.0f), glm::vec3( 1.0f, -1.0f,  1.0f),
+        glm::vec3( 1.0f,  1.0f,  1.0f), glm::vec3(-1.0f,  1.0f,  1.0f)
+    };
+
+    float lineVertices[] = {
+        // Cara inferior
+        c[0].x, c[0].y, c[0].z, c[1].x, c[1].y, c[1].z,
+        c[1].x, c[1].y, c[1].z, c[2].x, c[2].y, c[2].z,
+        c[2].x, c[2].y, c[2].z, c[3].x, c[3].y, c[3].z,
+        c[3].x, c[3].y, c[3].z, c[0].x, c[0].y, c[0].z,
+
+        c[4].x, c[4].y, c[4].z, c[5].x, c[5].y, c[5].z,
+        c[5].x, c[5].y, c[5].z, c[6].x, c[6].y, c[6].z,
+        c[6].x, c[6].y, c[6].z, c[7].x, c[7].y, c[7].z,
+        c[7].x, c[7].y, c[7].z, c[4].x, c[4].y, c[4].z,
+
+        c[0].x, c[0].y, c[0].z, c[4].x, c[4].y, c[4].z,
+        c[1].x, c[1].y, c[1].z, c[5].x, c[5].y, c[5].z,
+        c[2].x, c[2].y, c[2].z, c[6].x, c[6].y, c[6].z,
+        c[3].x, c[3].y, c[3].z, c[7].x, c[7].y, c[7].z
+    };
+
+    unsigned int VAO, VBO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(lineVertices), lineVertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glUseProgram(shader->ID);
+    
+    glm::mat4 modelMatrix = obj->getModelMatrix();
+    glUniformMatrix4fv(glGetUniformLocation(shader->ID, "model"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
+    glUniformMatrix4fv(glGetUniformLocation(shader->ID, "view"), 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(glGetUniformLocation(shader->ID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+    
+    glUniform4f(glGetUniformLocation(shader->ID, "objectColor"), 0.0f, 1.0f, 0.0f, 1.0f);
+
+    glLineWidth(2.0f);
+    glDrawArrays(GL_LINES, 0, 24);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+}
+
 Application::Application()
     : glfwManager(nullptr), uiManager(nullptr), renderer(nullptr),
       shader(nullptr), scene(nullptr), camera(nullptr), lighting(nullptr) {}
@@ -24,7 +80,7 @@ Application::~Application() {
 
 bool Application::init() {
     glfwManager = new GLFWManager();
-    this->window = glfwManager->createWindow(800, 1000, "Tarea 1 - Carga de Escena GLTF/GLB"); 
+    this->window = glfwManager->createWindow(800, 1000, "Tarea 1 - 30182893 - Jhonatan Homsany"); 
     if (!this->window) {
         return false;
     }
@@ -73,6 +129,9 @@ void Application::updateAndRender() {
         ray->intersect(&obj);
     }
     ray->drawRay(view, projection, flatShader);
+    if(picker && picker->hit_object){
+        drawSelectionBox(picker->hit_object, view, projection, flatShader);
+    }
 
     ImGuiIO& io = ImGui::GetIO();
     if (glfwGetMouseButton(this->window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && !io.WantCaptureMouse) {
@@ -84,8 +143,6 @@ void Application::updateAndRender() {
     uiManager->render();
     glfwManager->update();
 }
-
-
 
 void Application::cleanup() {
     delete uiManager;

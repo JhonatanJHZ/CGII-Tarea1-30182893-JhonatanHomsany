@@ -14,6 +14,7 @@ class Scene;
 class Lighting;
 class Ray;
 class InputPicker;
+enum class ShapeType;
 
 class UIManager {
     private:
@@ -25,6 +26,12 @@ class UIManager {
         char importPathBuffer[256] = "../../../Tarea1-30182893-JhonatanHomsany/assets/Link_ Zelda Tear of the Kingdom.glb";
         char savePathBuffer[256] = "../../../Tarea1-30182893-JhonatanHomsany/assets/escena_guardada.glb";
         char loadPathBuffer[256] = "../../../Tarea1-30182893-JhonatanHomsany/assets/escena_guardada.glb";
+
+        void addObjectGenerationUI(Scene* scene, InputPicker* picker, ShapeType& activeShapeType);
+        void addPickerUI(Scene* scene, InputPicker* picker);
+        void addIlluminationUI(Lighting* lighting);
+        void addRaycastUI(Ray* ray);
+        void addFileManagementUI(Scene* scene);
 
     public:
         UIManager(GLFWwindow* window);
