@@ -20,6 +20,7 @@ struct SceneObject {
     MeshType type;
     void* meshPointer;
     ShapeType shape = ShapeType::NONE;
+    float localRadius = 1.0f;
 
     glm::vec3 position = glm::vec3(0.0f);
     glm::vec3 rotation = glm::vec3(0.0f); 

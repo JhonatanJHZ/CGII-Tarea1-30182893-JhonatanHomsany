@@ -3,7 +3,6 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "SceneObject.h"
 
-
 Ray::Ray(const glm::vec3 origin, const glm::vec3 direction, Color rgba, float t_min, float t_max){
     this->origin = origin;
     this->direction = direction;
@@ -30,24 +29,25 @@ void Ray::drawRay(const glm::mat4& view, const glm::mat4& projection, Shader* sh
     drawSegment(origin, point, rgba, view, projection, shader);
 }
 
-
 bool Ray::intersect(SceneObject *obj){
     if(obj == nullptr) return false;
-    if(obj->shape == ShapeType::SPHERE){
-        float t_hit;
-        glm::vec3 normal;
-        float radius = std::max({obj->scale.x, obj->scale.y, obj->scale.z});
-        if(hitSphere(obj->position, radius, *this, t_hit, normal)){
-            if(t_hit < hit_t && t_hit > t_min){
-                hit_object = obj;
-                hit_t = t_hit;
-                hit_normal = normal;
-                return true;
-            }
+    
+    float t_hit;
+    glm::vec3 normal;
+    
+    float worldRadius = obj->localRadius * std::max({obj->scale.x, obj->scale.y, obj->scale.z});
+    
+    if(hitSphere(obj->position, worldRadius, *this, t_hit, normal)){
+        if(t_hit < hit_t && t_hit > t_min){
+            hit_object = obj;
+            hit_t = t_hit;
+            hit_normal = normal;
+            return true;
         }
     }   
     return false;
 }
+
 
 
 void Ray::drawSegment(glm::vec3 p1, glm::vec3 p2, Color rgba, const glm::mat4& view, const glm::mat4& projection, Shader* shader){
