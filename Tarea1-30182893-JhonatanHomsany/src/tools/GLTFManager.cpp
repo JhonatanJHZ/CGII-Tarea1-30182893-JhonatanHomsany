@@ -37,7 +37,6 @@ void GLTFManager::setupGL() {
         for (uint32_t p = 0; p < mesh.primitives_count; ++p) {
             const tg3_primitive& prim = mesh.primitives[p];
             
-            // Find POSITION and NORMAL accessors
             int posAccessorIdx = -1;
             int normAccessorIdx = -1;
             for (uint32_t a = 0; a < prim.attributes_count; ++a) {
@@ -122,7 +121,6 @@ void GLTFManager::setupGL() {
                 }
             }
 
-            // Create OpenGL buffers
             glGenVertexArrays(1, &gltfPrim.VAO);
             glGenBuffers(1, &gltfPrim.VBO);
 
@@ -136,11 +134,9 @@ void GLTFManager::setupGL() {
                 glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
             }
 
-            // Vertex position
             glEnableVertexAttribArray(0);
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
 
-            // Vertex normal
             glEnableVertexAttribArray(1);
             glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
 

@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 #include "../Ray.h"
 #include "../SceneObject.h"
-#include "../Scene.h" // Necesario para recorrer la escena
+#include "../Scene.h"
 
 class InputPicker {
 public:

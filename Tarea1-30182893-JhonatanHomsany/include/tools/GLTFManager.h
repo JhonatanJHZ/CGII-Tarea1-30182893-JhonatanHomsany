@@ -12,7 +12,7 @@ struct GLTFPrimitive {
     unsigned int EBO = 0;
     unsigned int indexCount = 0;
     unsigned int vertexCount = 0;
-    int mode = 4; // default GL_TRIANGLES
+    int mode = 4;
     bool hasIndices = false;
 };
 

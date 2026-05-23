@@ -24,7 +24,6 @@ void drawSelectionBox(const SceneObject* obj, const glm::mat4& view, const glm::
     };
 
     float lineVertices[] = {
-        // Cara inferior
         c[0].x, c[0].y, c[0].z, c[1].x, c[1].y, c[1].z,
         c[1].x, c[1].y, c[1].z, c[2].x, c[2].y, c[2].z,
         c[2].x, c[2].y, c[2].z, c[3].x, c[3].y, c[3].z,

@@ -54,10 +54,8 @@ void Scene::draw(const Shader* shader, const Renderer* renderer,
     
     glUseProgram(shader->ID);
     
-    // Subir la posición de la cámara (viewPos)
     glUniform3fv(glGetUniformLocation(shader->ID, "viewPos"), 1, glm::value_ptr(viewPos));
     
-    // Subir propiedades de la luz principal
     if (lighting && !lighting->lights.empty()) {
         const Light& mainLight = lighting->lights[0];
         glUniform3fv(glGetUniformLocation(shader->ID, "lightPos"), 1, glm::value_ptr(mainLight.position));
@@ -68,7 +66,6 @@ void Scene::draw(const Shader* shader, const Renderer* renderer,
         glUniform1f(glGetUniformLocation(shader->ID, "shininess"), mainLight.shininess);
         glUniform1i(glGetUniformLocation(shader->ID, "shadingMode"), static_cast<int>(lighting->activeMode));
     } else {
-        // Fallback por defecto si no se inyecta iluminación
         glm::vec3 defaultPos(2.0f, 4.0f, 5.0f);
         glm::vec3 defaultColor(1.0f);
         glUniform3fv(glGetUniformLocation(shader->ID, "lightPos"), 1, glm::value_ptr(defaultPos));
@@ -77,14 +74,13 @@ void Scene::draw(const Shader* shader, const Renderer* renderer,
         glUniform1f(glGetUniformLocation(shader->ID, "ambientIntensity"), 0.15f);
         glUniform1f(glGetUniformLocation(shader->ID, "specularStrength"), 0.5f);
         glUniform1f(glGetUniformLocation(shader->ID, "shininess"), 32.0f);
-        glUniform1i(glGetUniformLocation(shader->ID, "shadingMode"), 3); // Blinn-Phong por defecto
+        glUniform1i(glGetUniformLocation(shader->ID, "shadingMode"), 3);
     }
 
     for (const auto& obj : objects) {
         if (!obj.meshPointer) continue;
         glm::mat4 modelMatrix = obj.getModelMatrix();
         
-        // Cargar el color individual del objeto en el Shader
         glUniform3fv(glGetUniformLocation(shader->ID, "objectColor"), 1, glm::value_ptr(obj.color));
         
         if (obj.type == MeshType::GLTF) {
@@ -119,7 +115,6 @@ bool Scene::saveScene(const std::string& filepath) const {
     for (const auto& obj : objects) {
         if (!obj.meshPointer) continue;
 
-        // Crear material para el objeto
         tg3_material mat;
         memset(&mat, 0, sizeof(mat));
         mat.name = make_tg3_str(obj.name + "_material");
@@ -132,7 +127,6 @@ bool Scene::saveScene(const std::string& filepath) const {
         materials.push_back(mat);
         int mat_index = static_cast<int>(materials.size() - 1);
 
-        // Extraer geometría (vértices y normales)
         std::vector<std::vector<Vertex>> primitives_vertices;
 
         if (obj.type == MeshType::REVOLUTION_SOLID) {
@@ -232,7 +226,6 @@ bool Scene::saveScene(const std::string& filepath) const {
             }
         }
 
-        // Crear las primitivas en glTF
         std::vector<tg3_primitive> prims_list;
         for (const auto& vertices : primitives_vertices) {
             if (vertices.empty()) continue;
@@ -248,7 +241,7 @@ bool Scene::saveScene(const std::string& filepath) const {
             bv.byte_offset = offset;
             bv.byte_length = size_bytes;
             bv.byte_stride = sizeof(Vertex);
-            bv.target = 34962; // GL_ARRAY_BUFFER
+            bv.target = 34962;
             buffer_views.push_back(bv);
             int bv_index = static_cast<int>(buffer_views.size() - 1);
 
@@ -438,7 +431,6 @@ bool Scene::loadScene(const std::string& filepath) {
         return false;
     }
 
-    // Limpieza segura de la escena actual
     for (auto& obj : objects) {
         if (obj.meshPointer) {
             if (obj.type == MeshType::GLTF) {
@@ -568,7 +560,6 @@ bool Scene::loadScene(const std::string& filepath) {
 
         SceneObject newObj;
         newObj.name = obj_name;
-        // Cargamos todas las geometrías en un Mesh* genérico bajo el tipo REVOLUTION_SOLID para máxima estabilidad al renderizar
         newObj.type = MeshType::REVOLUTION_SOLID;
         newObj.color = mat_color;
 
@@ -576,10 +567,10 @@ bool Scene::loadScene(const std::string& filepath) {
         newObj.scale = glm::vec3(node.scale[0], node.scale[1], node.scale[2]);
 
         glm::quat q(
-            static_cast<float>(node.rotation[3]), // w
-            static_cast<float>(node.rotation[0]), // x
-            static_cast<float>(node.rotation[1]), // y
-            static_cast<float>(node.rotation[2])  // z
+            static_cast<float>(node.rotation[3]), 
+            static_cast<float>(node.rotation[0]), 
+            static_cast<float>(node.rotation[1]), 
+            static_cast<float>(node.rotation[2])  
         );
         newObj.rotation = glm::degrees(glm::eulerAngles(q));
 
