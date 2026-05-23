@@ -1,4 +1,4 @@
-#include "../include/InputPicker.h"
+#include "../../include/tools/InputPicker.h"
 #include <glm/gtc/type_ptr.hpp> 
 #include <algorithm>
 #include <iostream>
@@ -14,6 +14,7 @@ glm::vec3 getMouseWorldPos(double mouseX, double mouseY, int width, int height, 
 }
 
 InputPicker::InputPicker(){
+    ray = nullptr;
     hit_object = nullptr;
     hit_t = 0.0f;
 }
@@ -41,7 +42,6 @@ void InputPicker::pick(double mouseX, double mouseY, int width, int height, cons
     
     if(ray){
         delete ray;
-        ray = nullptr;
     }
 
     ray = new Ray(origin, direction, Color{1.0f, 0.0f, 0.0f, 1.0f}, 0.1f, 100.0f);

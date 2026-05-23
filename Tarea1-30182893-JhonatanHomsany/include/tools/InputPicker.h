@@ -1,8 +1,8 @@
 #pragma once
 #include <glm/glm.hpp>
-#include "Ray.h"
-#include "SceneObject.h"
-#include "Scene.h" // Necesario para recorrer la escena
+#include "../Ray.h"
+#include "../SceneObject.h"
+#include "../Scene.h" // Necesario para recorrer la escena
 
 class InputPicker {
 public:

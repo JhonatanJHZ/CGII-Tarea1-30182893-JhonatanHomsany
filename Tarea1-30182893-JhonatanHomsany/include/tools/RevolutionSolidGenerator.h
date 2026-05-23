@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <glm/glm.hpp>
-#include "Mesh.h"
+#include "../Mesh.h"
 
 struct ProfileSegment {
     bool isBezier = false;
@@ -14,4 +14,8 @@ struct ProfileSegment {
 class RevolutionSolidGenerator {
 public:
     static std::vector<Vertex> generate(const std::vector<ProfileSegment>& segments, int radialSegments, int samplePointsPerSegment = 20);
+
+    static void loadCylinderPreset(vector<ProfileSegment>& currentSegments);
+    static void loadConePreset(vector<ProfileSegment>& currentSegments);
+    static void loadSpherePreset(vector<ProfileSegment>& currentSegments);
 };

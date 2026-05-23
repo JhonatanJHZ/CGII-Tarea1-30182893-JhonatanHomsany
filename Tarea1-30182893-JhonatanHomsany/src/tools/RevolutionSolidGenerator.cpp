@@ -1,4 +1,4 @@
-#include "../include/RevolutionSolidGenerator.h"
+#include "../../include/tools/RevolutionSolidGenerator.h"
 #include <glm/gtc/constants.hpp>
 #include <cmath>
 
@@ -102,4 +102,70 @@ std::vector<Vertex> RevolutionSolidGenerator::generate(const std::vector<Profile
     }
 
     return result;
+}
+
+void RevolutionSolidGenerator::loadCylinderPreset(vector<ProfileSegment>& currentSegments) {
+    currentSegments.clear();
+    
+    // Disco base
+    ProfileSegment base;
+    base.isBezier = false;
+    base.p0 = glm::vec2(0.0f, -1.0f);
+    base.p1 = glm::vec2(0.8f, -1.0f);
+    currentSegments.push_back(base);
+
+    // Pared vertical
+    ProfileSegment wall;
+    wall.isBezier = false;
+    wall.p0 = glm::vec2(0.8f, -1.0f);
+    wall.p1 = glm::vec2(0.8f, 1.0f);
+    currentSegments.push_back(wall);
+
+    // Disco superior
+    ProfileSegment top;
+    top.isBezier = false;
+    top.p0 = glm::vec2(0.8f, 1.0f);
+    top.p1 = glm::vec2(0.0f, 1.0f);
+    currentSegments.push_back(top);
+}
+
+void RevolutionSolidGenerator::loadConePreset(vector<ProfileSegment>& currentSegments) {
+    currentSegments.clear();
+    
+    // Disco base
+    ProfileSegment base;
+    base.isBezier = false;
+    base.p0 = glm::vec2(0.0f, -1.0f);
+    base.p1 = glm::vec2(0.8f, -1.0f);
+    currentSegments.push_back(base);
+
+    // Lateral inclinado hasta la punta
+    ProfileSegment side;
+    side.isBezier = false;
+    side.p0 = glm::vec2(0.8f, -1.0f);
+    side.p1 = glm::vec2(0.0f, 1.0f);
+    currentSegments.push_back(side);
+}
+
+void RevolutionSolidGenerator::loadSpherePreset(vector<ProfileSegment>& currentSegments) {
+    currentSegments.clear();
+
+    const float KAPPA = 0.5522847498f;
+    const float RADIUS = 1.0f;
+
+    ProfileSegment bottomCurve;
+    bottomCurve.isBezier = true;
+    bottomCurve.p0 = glm::vec2(0.0f, -RADIUS);
+    bottomCurve.p1 = glm::vec2(RADIUS * KAPPA, -RADIUS);
+    bottomCurve.p2 = glm::vec2(RADIUS, -RADIUS * KAPPA);
+    bottomCurve.p3 = glm::vec2(RADIUS, 0.0f);
+    currentSegments.push_back(bottomCurve);
+
+    ProfileSegment topCurve;
+    topCurve.isBezier = true;
+    topCurve.p0 = glm::vec2(RADIUS, 0.0f);
+    topCurve.p1 = glm::vec2(RADIUS, RADIUS * KAPPA);
+    topCurve.p2 = glm::vec2(RADIUS * KAPPA, RADIUS);
+    topCurve.p3 = glm::vec2(0.0f, RADIUS);
+    currentSegments.push_back(topCurve);
 }

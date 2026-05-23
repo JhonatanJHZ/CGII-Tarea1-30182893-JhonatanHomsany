@@ -1,4 +1,4 @@
-#include "GLTFManager.h"
+#include "../include/tools/GLTFManager.h"
 #include <iostream>
 
 GLTFManager::GLTFManager() {

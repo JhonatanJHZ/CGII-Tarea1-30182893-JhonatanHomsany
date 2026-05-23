@@ -1,5 +1,5 @@
 #include "../include/Renderer.h"
-#include "../include/GLTFManager.h"
+#include "../include/tools/GLTFManager.h"
 #include "../include/Mesh.h"
 
 Renderer::Renderer(){

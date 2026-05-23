@@ -6,7 +6,7 @@
 #include <cstddef>
 #include <vector>
 #include <string>
-#include "RevolutionSolidGenerator.h"
+#include "../tools/RevolutionSolidGenerator.h"
 
 
 struct GLFWwindow;
@@ -25,10 +25,6 @@ class UIManager {
         char importPathBuffer[256] = "../../../Tarea1-30182893-JhonatanHomsany/assets/Link_ Zelda Tear of the Kingdom.glb";
         char savePathBuffer[256] = "../../../Tarea1-30182893-JhonatanHomsany/assets/escena_guardada.glb";
         char loadPathBuffer[256] = "../../../Tarea1-30182893-JhonatanHomsany/assets/escena_guardada.glb";
-
-        void loadCylinderPreset();
-        void loadConePreset();
-        void loadSpherePreset();
 
     public:
         UIManager(GLFWwindow* window);

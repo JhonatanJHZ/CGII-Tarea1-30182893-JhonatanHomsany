@@ -1,4 +1,4 @@
-#include "../include/GLFWManager.h"
+#include "../../include/tools/GLFWManager.h"
 using namespace std;
 
 GLFWManager::GLFWManager(){
@@ -9,6 +9,7 @@ GLFWManager::GLFWManager(){
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 }
 
 GLFWManager::~GLFWManager(){

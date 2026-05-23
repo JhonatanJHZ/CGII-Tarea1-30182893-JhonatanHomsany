@@ -13,18 +13,18 @@ add_subdirectory("vendor/tinygltf")
 
 add_executable(Tarea1 
     "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/Tarea1-30182893-JhonatanHomsany.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/GLTFManager.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/UIManager.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/GLFWManager.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/tools/GLTFManager.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/tools/UIManager.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/tools/GLFWManager.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/Shader.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/Renderer.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/Mesh.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/Camera.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/Application.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/Scene.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/RevolutionSolidGenerator.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/tools/RevolutionSolidGenerator.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/Ray.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/InputPicker.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/tools/InputPicker.cpp"
 )
 
 set_target_properties(Tarea1 PROPERTIES 

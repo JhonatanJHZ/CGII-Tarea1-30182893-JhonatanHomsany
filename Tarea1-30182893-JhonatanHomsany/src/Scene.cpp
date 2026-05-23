@@ -1,7 +1,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include "../include/Scene.h"
 #include "../include/Renderer.h"
-#include "../include/GLTFManager.h"
+#include "../include/tools/GLTFManager.h"
 #include "../include/Mesh.h"
 #include "../include/Shader.h"
 #include "../include/Lighting.h"

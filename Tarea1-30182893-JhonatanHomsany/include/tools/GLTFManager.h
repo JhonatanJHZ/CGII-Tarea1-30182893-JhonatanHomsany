@@ -4,7 +4,7 @@
 #include <vector>
 #include <glad/glad.h>
 #include <tiny_gltf_v3.h> 
-#include "Mesh.h"
+#include "../Mesh.h"
 
 struct GLTFPrimitive {
     unsigned int VAO = 0;

@@ -1,14 +1,14 @@
 #include "../include/Application.h"
-#include "../include/GLFWManager.h"
-#include "../include/UIManager.h"
+#include "../include/tools/GLFWManager.h"
+#include "../include/tools/UIManager.h"
 #include "../include/Renderer.h"
 #include "../include/Shader.h"
 #include "../include/Camera.h"
-#include "../include/GLTFManager.h"
+#include "../include/tools/GLTFManager.h"
 #include "../include/Scene.h"
 #include "../include/Lighting.h"
 #include "../include/Ray.h"
-#include "../include/InputPicker.h"
+#include "../include/tools/InputPicker.h"
 
 #include <GLFW/glfw3.h>
 #include <algorithm>
@@ -24,7 +24,7 @@ Application::~Application() {
 
 bool Application::init() {
     glfwManager = new GLFWManager();
-    this->window = glfwManager->createWindow(800, 600, "Tarea 1 - Carga de Escena GLTF/GLB"); 
+    this->window = glfwManager->createWindow(800, 1000, "Tarea 1 - Carga de Escena GLTF/GLB"); 
     if (!this->window) {
         return false;
     }

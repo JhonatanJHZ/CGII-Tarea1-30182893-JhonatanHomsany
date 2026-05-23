@@ -1,13 +1,13 @@
-#include "../include/UIManager.h"
-#include "../include/Scene.h"
-#include "../include/Mesh.h"
-#include "../include/Lighting.h"
-#include "../include/GLTFManager.h"
+#include "../../include/tools/UIManager.h"
+#include "../../include/Scene.h"
+#include "../../include/Mesh.h"
+#include "../../include/Lighting.h"
+#include "../../include/tools/GLTFManager.h"
 #include <glm/gtc/type_ptr.hpp>
 #include <GLFW/glfw3.h>
 #include <iostream>
-#include "../include/Ray.h"
-#include "../include/InputPicker.h"
+#include "../../include/Ray.h"
+#include "../../include/tools/InputPicker.h"
 
 using namespace std;
 
@@ -116,11 +116,11 @@ void UIManager::drawInspector(Scene* scene, Lighting* lighting, Ray* ray, InputP
     ImGui::Separator();
     
     ImGui::Text("Presets de Contorno:");
-    if (ImGui::Button("Cilindro", ImVec2(70, 0))) { loadCylinderPreset(); activeShapeType = ShapeType::CYLINDER; }
+    if (ImGui::Button("Cilindro", ImVec2(70, 0))) { RevolutionSolidGenerator::loadCylinderPreset(currentSegments); activeShapeType = ShapeType::CYLINDER; }
     ImGui::SameLine();
-    if (ImGui::Button("Cono", ImVec2(70, 0))) { loadConePreset(); activeShapeType = ShapeType::CONE; }
+    if (ImGui::Button("Cono", ImVec2(70, 0))) { RevolutionSolidGenerator::loadConePreset(currentSegments); activeShapeType = ShapeType::CONE; }
     ImGui::SameLine();
-    if (ImGui::Button("Esfera", ImVec2(70, 0))) { loadSpherePreset(); activeShapeType = ShapeType::SPHERE; }
+    if (ImGui::Button("Esfera", ImVec2(70, 0))) { RevolutionSolidGenerator::loadSpherePreset(currentSegments); activeShapeType = ShapeType::SPHERE; }
 
     
     if (ImGui::Button("Generar e Incorporar a Escena", ImVec2(-FLT_MIN, 40))) {
@@ -238,70 +238,4 @@ void UIManager::drawInspector(Scene* scene, Lighting* lighting, Ray* ray, InputP
 void UIManager::render() {
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-}
-
-void UIManager::loadCylinderPreset() {
-    currentSegments.clear();
-    
-    // Disco base
-    ProfileSegment base;
-    base.isBezier = false;
-    base.p0 = glm::vec2(0.0f, -1.0f);
-    base.p1 = glm::vec2(0.8f, -1.0f);
-    currentSegments.push_back(base);
-
-    // Pared vertical
-    ProfileSegment wall;
-    wall.isBezier = false;
-    wall.p0 = glm::vec2(0.8f, -1.0f);
-    wall.p1 = glm::vec2(0.8f, 1.0f);
-    currentSegments.push_back(wall);
-
-    // Disco superior
-    ProfileSegment top;
-    top.isBezier = false;
-    top.p0 = glm::vec2(0.8f, 1.0f);
-    top.p1 = glm::vec2(0.0f, 1.0f);
-    currentSegments.push_back(top);
-}
-
-void UIManager::loadConePreset() {
-    currentSegments.clear();
-    
-    // Disco base
-    ProfileSegment base;
-    base.isBezier = false;
-    base.p0 = glm::vec2(0.0f, -1.0f);
-    base.p1 = glm::vec2(0.8f, -1.0f);
-    currentSegments.push_back(base);
-
-    // Lateral inclinado hasta la punta
-    ProfileSegment side;
-    side.isBezier = false;
-    side.p0 = glm::vec2(0.8f, -1.0f);
-    side.p1 = glm::vec2(0.0f, 1.0f);
-    currentSegments.push_back(side);
-}
-
-void UIManager::loadSpherePreset() {
-    currentSegments.clear();
-
-    const float KAPPA = 0.5522847498f;
-    const float RADIUS = 1.0f;
-
-    ProfileSegment bottomCurve;
-    bottomCurve.isBezier = true;
-    bottomCurve.p0 = glm::vec2(0.0f, -RADIUS);
-    bottomCurve.p1 = glm::vec2(RADIUS * KAPPA, -RADIUS);
-    bottomCurve.p2 = glm::vec2(RADIUS, -RADIUS * KAPPA);
-    bottomCurve.p3 = glm::vec2(RADIUS, 0.0f);
-    currentSegments.push_back(bottomCurve);
-
-    ProfileSegment topCurve;
-    topCurve.isBezier = true;
-    topCurve.p0 = glm::vec2(RADIUS, 0.0f);
-    topCurve.p1 = glm::vec2(RADIUS, RADIUS * KAPPA);
-    topCurve.p2 = glm::vec2(RADIUS * KAPPA, RADIUS);
-    topCurve.p3 = glm::vec2(0.0f, RADIUS);
-    currentSegments.push_back(topCurve);
 }
