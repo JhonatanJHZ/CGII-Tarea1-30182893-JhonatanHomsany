@@ -1,5 +1,9 @@
+# Force CMake Cache Refresh 1
 cmake_minimum_required (VERSION 3.10)
 project ("Tarea1-30182893-JhonatanHomsany")
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_subdirectory("vendor/glad")
 add_subdirectory("vendor/glfw")
@@ -13,9 +17,21 @@ add_executable(Tarea1
     "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/UIManager.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/GLFWManager.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/Shader.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/Renderer.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/Mesh.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/Camera.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/Application.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/Scene.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/RevolutionSolidGenerator.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/Ray.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/InputPicker.cpp"
 )
 
-set_target_properties(Tarea1 PROPERTIES OUTPUT_NAME "Tarea1-30182893-JhonatanHomsany")
+set_target_properties(Tarea1 PROPERTIES 
+    OUTPUT_NAME "Tarea1-30182893-JhonatanHomsany"
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+)
 
 target_include_directories(Tarea1 PRIVATE 
     "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/include"

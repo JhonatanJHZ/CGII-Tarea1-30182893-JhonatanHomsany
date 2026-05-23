@@ -1,18 +1,30 @@
 #pragma once
-
-#include "tiny_gltf_v3.h"
-#include <vector>
 #include <string>
+#include <string_view>
+#include <vector>
+#include <glad/glad.h>
+#include <tiny_gltf_v3.h> 
+#include "Mesh.h"
 
-using namespace std;
+struct GLTFPrimitive {
+    unsigned int VAO = 0;
+    unsigned int VBO = 0;
+    unsigned int EBO = 0;
+    unsigned int indexCount = 0;
+    unsigned int vertexCount = 0;
+    int mode = 4; // default GL_TRIANGLES
+    bool hasIndices = false;
+};
 
 class GLTFManager {
-    public:
-        GLTFManager();
-        ~GLTFManager();
-        
-        bool loadModel(const string& filename);
+public:
+    tinygltf3::Model model;
+    std::vector<GLTFPrimitive> primitives;
 
-    private:
-        tinygltf3::Model model;
+    GLTFManager();
+    ~GLTFManager();
+
+    bool loadModel(const std::string& filename);
+    void setupGL();
+    void draw() const;
 };
