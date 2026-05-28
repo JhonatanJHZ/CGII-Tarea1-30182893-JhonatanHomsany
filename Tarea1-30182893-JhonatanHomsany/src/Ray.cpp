@@ -2,6 +2,7 @@
 #include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
 #include "SceneObject.h"
+#include "../include/tools/GLTFManager.h"
 
 Ray::Ray(const glm::vec3 origin, const glm::vec3 direction, Color rgba, float t_min, float t_max){
     this->origin = origin;
@@ -25,30 +26,70 @@ glm::vec3 Ray::getDirection() const {
 }
 
 void Ray::drawRay(const glm::mat4& view, const glm::mat4& projection, Shader* shader){
-    glm::vec3 point = origin + direction * t_max;
+    glm::vec3 point = origin + direction * glm::min(t_max, hit_t);
     drawSegment(origin, point, rgba, view, projection, shader);
 }
 
 bool Ray::intersect(SceneObject *obj){
     if(obj == nullptr) return false;
-    
-    float t_hit;
-    glm::vec3 normal;
-    
-    float worldRadius = obj->localRadius * std::max({obj->scale.x, obj->scale.y, obj->scale.z});
-    
-    if(hitSphere(obj->position, worldRadius, *this, t_hit, normal)){
-        if(t_hit < hit_t && t_hit > t_min){
-            hit_object = obj;
-            hit_t = t_hit;
-            hit_normal = normal;
-            return true;
+
+    if(obj->shape == ShapeType::SPHERE){
+        float t_hit;
+        glm::vec3 normal;
+        float radius = std::max({obj->scale.x, obj->scale.y, obj->scale.z});
+        if(hitSphere(obj->position, radius, *this, t_hit, normal)){
+            if(t_hit < hit_t && t_hit > t_min){
+                hit_object = obj;
+                hit_t = t_hit;
+                hit_normal = normal;
+                return true;
+            }
         }
-    }   
+        return false;
+    }
+
+    std::vector<Vertex> localVertices;
+    if (obj->type == MeshType::REVOLUTION_SOLID) {
+        if (obj->meshPointer) {
+            localVertices = static_cast<Mesh*>(obj->meshPointer)->getVertices();
+        }
+    } else if (obj->type == MeshType::GLTF) {
+        if (obj->meshPointer) {
+            localVertices = static_cast<GLTFManager*>(obj->meshPointer)->getVertices();
+        }
+    }
+
+    if (localVertices.empty()) return false;
+
+    bool hitAny = false;
+    float closest_t = hit_t;
+    glm::vec3 closest_normal = hit_normal;
+    glm::mat4 modelMatrix = obj->getModelMatrix();
+    for (size_t i = 0; i < localVertices.size(); i += 3) {
+        glm::vec3 v0 = glm::vec3(modelMatrix * glm::vec4(localVertices[i].position, 1.0f));
+        glm::vec3 v1 = glm::vec3(modelMatrix * glm::vec4(localVertices[i+1].position, 1.0f));
+        glm::vec3 v2 = glm::vec3(modelMatrix * glm::vec4(localVertices[i+2].position, 1.0f));
+
+        float t_temp;
+        glm::vec3 normal_temp;
+        if (hitTriangle(v0, v1, v2, *this, t_temp, normal_temp)) {
+            if (t_temp < closest_t && t_temp > t_min) {
+                closest_t = t_temp;
+                closest_normal = normal_temp;
+                hitAny = true;
+            }
+        }
+    }
+
+    if (hitAny) {
+        hit_object = obj;
+        hit_t = closest_t;
+        hit_normal = closest_normal;
+        return true;
+    }
+
     return false;
 }
-
-
 
 void Ray::drawSegment(glm::vec3 p1, glm::vec3 p2, Color rgba, const glm::mat4& view, const glm::mat4& projection, Shader* shader){
     if (!shader) return;
@@ -98,4 +139,45 @@ bool Ray::hitSphere(const glm::vec3& center, float radius, const Ray& ray, float
         return true;
     }
     return false; 
+}
+
+bool Ray::hitTriangle(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2, const Ray& ray, float& t_hit, glm::vec3& normal) {
+    const float EPSILON = 1e-6f;
+    glm::vec3 edge1 = v1 - v0;
+    glm::vec3 edge2 = v2 - v0;
+    
+    glm::vec3 h = glm::cross(ray.getDirection(), edge2);
+    float a = glm::dot(edge1, h);
+
+    if (a > -EPSILON && a < EPSILON) {
+        return false; 
+    }
+
+    float f = 1.0f / a;
+    glm::vec3 s = ray.getOrigin() - v0;
+    float u = f * glm::dot(s, h);
+
+    if (u < 0.0f || u > 1.0f) {
+        return false;
+    }
+
+    glm::vec3 q = glm::cross(s, edge1);
+    float v = f * glm::dot(ray.getDirection(), q);
+
+    if (v < 0.0f || u + v > 1.0f) {
+        return false;
+    }
+
+    float t = f * glm::dot(edge2, q);
+
+    if (t > EPSILON) {
+        t_hit = t;
+        normal = glm::normalize(glm::cross(edge1, edge2));
+        if (glm::dot(normal, ray.getDirection()) > 0.0f) {
+            normal = -normal;
+        }
+        return true;
+    }
+
+    return false;
 }

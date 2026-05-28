@@ -10,6 +10,7 @@ class Camera;
 class Lighting;
 class Ray;
 class InputPicker;
+class ShadowManager;
 
 class Application {
 public:
@@ -28,8 +29,13 @@ public:
     bool init();
     void updateAndRender();
     void cleanup();
+    void loadBoxScene();
 
     Application();
     ~Application();
     void run();
+
+    private:
+
+    void handleKeyboardEvents(float deltaTime);
 };

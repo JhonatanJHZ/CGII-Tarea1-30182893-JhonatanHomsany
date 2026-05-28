@@ -164,3 +164,94 @@ void GLTFManager::draw() const {
     }
     glBindVertexArray(0);
 }
+
+std::vector<Vertex> GLTFManager::getVertices() const {
+    std::vector<Vertex> all_vertices;
+    if (model->meshes_count == 0) return all_vertices;
+
+    for (uint32_t m_idx = 0; m_idx < model->meshes_count; ++m_idx) {
+        const tg3_mesh& mesh = model->meshes[m_idx];
+        for (uint32_t p_idx = 0; p_idx < mesh.primitives_count; ++p_idx) {
+            const tg3_primitive& prim = mesh.primitives[p_idx];
+            
+            int posAccessorIdx = -1;
+            int normAccessorIdx = -1;
+            for (uint32_t a = 0; a < prim.attributes_count; ++a) {
+                const tg3_str_int_pair& attr = prim.attributes[a];
+                std::string_view key(attr.key.data, attr.key.len);
+                if (key == "POSITION") {
+                    posAccessorIdx = attr.value;
+                } else if (key == "NORMAL") {
+                    normAccessorIdx = attr.value;
+                }
+            }
+            
+            if (posAccessorIdx == -1) continue;
+            
+            const tg3_accessor* posAccessor = &model->accessors[posAccessorIdx];
+            const tg3_buffer_view* posBV = posAccessor->buffer_view >= 0 ? &model->buffer_views[posAccessor->buffer_view] : nullptr;
+            const tg3_buffer* posBuffer = posBV ? &model->buffers[posBV->buffer] : nullptr;
+            const uint8_t* posData = posBuffer ? posBuffer->data.data + posBV->byte_offset + posAccessor->byte_offset : nullptr;
+            int posStride = posBV ? (posBV->byte_stride > 0 ? posBV->byte_stride : 12) : 12;
+            
+            const tg3_accessor* normAccessor = normAccessorIdx >= 0 ? &model->accessors[normAccessorIdx] : nullptr;
+            const tg3_buffer_view* normBV = (normAccessor && normAccessor->buffer_view >= 0) ? &model->buffer_views[normAccessor->buffer_view] : nullptr;
+            const tg3_buffer* normBuffer = normBV ? &model->buffers[normBV->buffer] : nullptr;
+            const uint8_t* normData = normBuffer ? normBuffer->data.data + normBV->byte_offset + normAccessor->byte_offset : nullptr;
+            int normStride = normBV ? (normBV->byte_stride > 0 ? normBV->byte_stride : 12) : 12;
+            
+            std::vector<Vertex> temp_vertices;
+            temp_vertices.resize(posAccessor->count);
+            for (uint64_t v_idx = 0; v_idx < posAccessor->count; ++v_idx) {
+                Vertex v;
+                if (posData) {
+                    const float* p = reinterpret_cast<const float*>(posData + v_idx * posStride);
+                    v.position = glm::vec3(p[0], p[1], p[2]);
+                } else {
+                    v.position = glm::vec3(0.0f);
+                }
+                if (normData) {
+                    const float* n = reinterpret_cast<const float*>(normData + v_idx * normStride);
+                    v.normal = glm::vec3(n[0], n[1], n[2]);
+                } else {
+                    v.normal = glm::vec3(0.0f, 0.0f, 1.0f);
+                }
+                temp_vertices[v_idx] = v;
+            }
+            
+            if (prim.indices != -1) {
+                const tg3_accessor* idxAccessor = &model->accessors[prim.indices];
+                const tg3_buffer_view* idxBV = idxAccessor->buffer_view >= 0 ? &model->buffer_views[idxAccessor->buffer_view] : nullptr;
+                const tg3_buffer* idxBuffer = idxBV ? &model->buffers[idxBV->buffer] : nullptr;
+                const uint8_t* idxData = idxBuffer ? idxBuffer->data.data + idxBV->byte_offset + idxAccessor->byte_offset : nullptr;
+                
+                int componentSize = 0;
+                if (idxAccessor->component_type == TG3_COMPONENT_TYPE_UNSIGNED_BYTE) componentSize = 1;
+                else if (idxAccessor->component_type == TG3_COMPONENT_TYPE_UNSIGNED_SHORT) componentSize = 2;
+                else if (idxAccessor->component_type == TG3_COMPONENT_TYPE_UNSIGNED_INT) componentSize = 4;
+                
+                int idxStride = idxBV ? (idxBV->byte_stride > 0 ? idxBV->byte_stride : componentSize) : componentSize;
+                
+                if (idxData) {
+                    for (uint64_t idx_i = 0; idx_i < idxAccessor->count; ++idx_i) {
+                        unsigned int idx_val = 0;
+                        const uint8_t* p = idxData + idx_i * idxStride;
+                        if (idxAccessor->component_type == TG3_COMPONENT_TYPE_UNSIGNED_BYTE) {
+                            idx_val = *reinterpret_cast<const uint8_t*>(p);
+                        } else if (idxAccessor->component_type == TG3_COMPONENT_TYPE_UNSIGNED_SHORT) {
+                            idx_val = *reinterpret_cast<const uint16_t*>(p);
+                        } else if (idxAccessor->component_type == TG3_COMPONENT_TYPE_UNSIGNED_INT) {
+                            idx_val = *reinterpret_cast<const uint32_t*>(p);
+                        }
+                        if (idx_val < temp_vertices.size()) {
+                            all_vertices.push_back(temp_vertices[idx_val]);
+                        }
+                    }
+                }
+            } else {
+                all_vertices.insert(all_vertices.end(), temp_vertices.begin(), temp_vertices.end());
+            }
+        }
+    }
+    return all_vertices;
+}

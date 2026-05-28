@@ -7,13 +7,14 @@
 #include <vector>
 #include <string>
 #include "../tools/RevolutionSolidGenerator.h"
-
+#include "../tools/ShadowManager.h"
 
 struct GLFWwindow;
 class Scene;
 class Lighting;
 class Ray;
 class InputPicker;
+class Camera;
 enum class ShapeType;
 
 class UIManager {
@@ -27,16 +28,20 @@ class UIManager {
         char savePathBuffer[256] = "../../../Tarea1-30182893-JhonatanHomsany/assets/escena_guardada.glb";
         char loadPathBuffer[256] = "../../../Tarea1-30182893-JhonatanHomsany/assets/escena_guardada.glb";
 
+        void addInstructionsUI();
+        void generateRevolutionSolid(Scene* scene, InputPicker* picker, ShapeType& activeShapeType);
         void addObjectGenerationUI(Scene* scene, InputPicker* picker, ShapeType& activeShapeType);
         void addPickerUI(Scene* scene, InputPicker* picker);
         void addIlluminationUI(Lighting* lighting);
         void addRaycastUI(Ray* ray);
         void addFileManagementUI(Scene* scene);
+        void addCameraUI(Camera* camera);
+        void addShadowModesUI();
 
     public:
         UIManager(GLFWwindow* window);
         ~UIManager();
         void newFrame();
-        void drawInspector(Scene* scene, Lighting* lighting, Ray* ray, InputPicker* picker);
+        void drawInspector(Scene* scene, Lighting* lighting, Ray* ray, InputPicker* picker, Camera* camera = nullptr);
         void render();
 };

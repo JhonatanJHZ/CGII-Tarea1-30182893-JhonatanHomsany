@@ -23,8 +23,10 @@ add_executable(Tarea1
     "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/Application.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/Scene.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/tools/RevolutionSolidGenerator.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/tools/BasicShapesGenerator.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/Ray.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/tools/InputPicker.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/tools/ShadowManager.cpp"
 )
 
 set_target_properties(Tarea1 PROPERTIES 

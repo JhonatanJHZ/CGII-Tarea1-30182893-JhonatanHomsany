@@ -2,6 +2,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+enum class MovementDirection{
+    FORWARD,
+    BACKWARD,
+    LEFT,
+    RIGHT
+};
+
 class Camera {
 private:
     glm::vec3 position;
@@ -10,6 +17,10 @@ private:
     float fov;
     float nearPlane;
     float farPlane;
+    float movementSpeed;
+    float rotationSpeed;
+    float yaw;
+    float pitch;
 
 public:
     Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 8.0f), 
@@ -20,9 +31,23 @@ public:
            float farPlane = 100.0f);
     ~Camera();
 
+    void initAnglesFromTarget();
+
     glm::mat4 getViewMatrix() const;
     glm::mat4 getProjectionMatrix(float aspect) const;
 
     glm::vec3 getPosition() const { return position; }
     void setPosition(const glm::vec3& pos) { position = pos; }
+
+    glm::vec3 getTarget() const { return target; }
+    void setTarget(const glm::vec3& tgt) { target = tgt; }
+
+    glm::vec3 getUp() const { return up; }
+    void setUp(const glm::vec3& u) { up = u; }
+
+    float getFov() const { return fov; }
+    void setFov(float f) { fov = f; }
+
+    void movement(MovementDirection direction, float deltaTime);
+    void rotate(float yawOffset, float pitchOffset);
 };

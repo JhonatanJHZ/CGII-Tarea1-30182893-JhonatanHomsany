@@ -27,4 +27,5 @@ public:
     bool loadModel(const std::string& filename);
     void setupGL();
     void draw() const;
+    std::vector<Vertex> getVertices() const;
 };

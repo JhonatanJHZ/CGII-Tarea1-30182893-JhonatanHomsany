@@ -9,6 +9,9 @@
 #include "../include/Lighting.h"
 #include "../include/Ray.h"
 #include "../include/tools/InputPicker.h"
+#include "../include/tools/BasicShapesGenerator.h"
+#include "../include/tools/ShadowManager.h"
+
 
 #include <GLFW/glfw3.h>
 #include <algorithm>
@@ -91,8 +94,11 @@ bool Application::init() {
 
     scene = new Scene();
     lighting = new Lighting();
-    ray = new Ray(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(2.0f, 0.0f, -1.0f), Color{1.0f, 0.0f, 0.0f, 1.0f}, 0.0f, 10.0f);
+    ray = new Ray(glm::vec3(-2.45f, -1.8f, -0.9f), glm::vec3(1.65f, -1.45f, 0.2f), Color{32.0f/255.0f, 63.0f/255.0f, 185.0f/255.0f, 1.0f}, 0.0f, 10.0f);
     picker = new InputPicker();
+
+    ShadowManager::initShadowFBO();
+    loadBoxScene();
 
     return true;
 }
@@ -108,9 +114,13 @@ void Application::run() {
 }
 
 void Application::updateAndRender() {
+    static float lastFrame = 0.0f;
+    float currentFrame = (float)glfwGetTime();
+    float deltaTime = currentFrame - lastFrame;
+    lastFrame = currentFrame;
     renderer->clear();
     uiManager->newFrame();
-    uiManager->drawInspector(scene, lighting, ray, picker);
+    uiManager->drawInspector(scene, lighting, ray, picker, camera);
 
     glm::mat4 view = camera->getViewMatrix();
 
@@ -119,6 +129,15 @@ void Application::updateAndRender() {
     display_h = std::max(1, display_h);
     float aspect = (float)display_w / (float)display_h;
     glm::mat4 projection = camera->getProjectionMatrix(aspect);
+
+    if (ShadowManager::mode == ShadowMode::PLANAR) {
+        if (lighting && !lighting->lights.empty()) {
+            glm::vec3 lightPos = lighting->lights[0].position;
+            ShadowManager::renderPlanarShadows(scene, flatShader, renderer, lightPos, -7.99f, view, projection);
+        }
+    } else if (ShadowManager::mode == ShadowMode::SHADOW_MAPPING) {
+        // ... Ejecutar la lógica de Shadow Mapping ...
+    }
 
     scene->draw(shader, renderer, view, projection, lighting, camera->getPosition());
 
@@ -139,11 +158,66 @@ void Application::updateAndRender() {
         picker->pick(mouseX, mouseY, display_w, display_h, view, projection, scene);
     }
 
+    handleKeyboardEvents(deltaTime);
+
     uiManager->render();
     glfwManager->update();
 }
 
+void Application::loadBoxScene() {
+    BasicShapesGenerator::loadDefaultBoxScene(scene, lighting, camera);
+}
+
+void Application::handleKeyboardEvents(float deltaTime) {
+    ImGuiIO& io = ImGui::GetIO();
+    
+    if (!io.WantCaptureKeyboard) {
+        if (glfwGetKey(this->window, GLFW_KEY_W) == GLFW_PRESS) {
+            camera->movement(MovementDirection::FORWARD, deltaTime);
+        }
+        if (glfwGetKey(this->window, GLFW_KEY_S) == GLFW_PRESS) {
+            camera->movement(MovementDirection::BACKWARD, deltaTime);
+        }
+        if (glfwGetKey(this->window, GLFW_KEY_A) == GLFW_PRESS) {
+            camera->movement(MovementDirection::LEFT, deltaTime);
+        }
+        if (glfwGetKey(this->window, GLFW_KEY_D) == GLFW_PRESS) {
+            camera->movement(MovementDirection::RIGHT, deltaTime);
+        }
+    }
+
+    static bool isMouseCaptured = false;
+    static double lastMouseX = 0.0;
+    static double lastMouseY = 0.0;
+
+    if (glfwGetKey(this->window, GLFW_KEY_Z) == GLFW_PRESS) {
+        if (!isMouseCaptured) {
+            glfwSetInputMode(this->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            glfwGetCursorPos(this->window, &lastMouseX, &lastMouseY);
+            isMouseCaptured = true;
+        } else {
+            double mouseX, mouseY;
+            glfwGetCursorPos(this->window, &mouseX, &mouseY);
+            
+            float xOffset = (float)(mouseX - lastMouseX);
+            float yOffset = (float)(lastMouseY - mouseY);
+
+            lastMouseX = mouseX;
+            lastMouseY = mouseY;
+            camera->rotate(xOffset, yOffset);
+        }
+    } else {
+        if (isMouseCaptured) {
+            glfwSetInputMode(this->window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            isMouseCaptured = false;
+        }
+    }
+}
+
+
+
 void Application::cleanup() {
+    ShadowManager::cleanupShadowFBO();
     delete uiManager;
     uiManager = nullptr;
     delete camera;
