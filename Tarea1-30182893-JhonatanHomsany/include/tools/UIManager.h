@@ -35,13 +35,13 @@ class UIManager {
         void addIlluminationUI(Lighting* lighting);
         void addRaycastUI(Ray* ray);
         void addFileManagementUI(Scene* scene);
-        void addCameraUI(Camera* camera);
+        void addCameraUI(std::vector<Camera*>& cameras, int& activeCameraIndex);
         void addShadowModesUI();
 
     public:
         UIManager(GLFWwindow* window);
         ~UIManager();
         void newFrame();
-        void drawInspector(Scene* scene, Lighting* lighting, Ray* ray, InputPicker* picker, Camera* camera = nullptr);
+        void drawInspector(Scene* scene, Lighting* lighting, Ray* ray, InputPicker* picker, std::vector<Camera*>& cameras, int& activeCameraIndex);
         void render();
 };

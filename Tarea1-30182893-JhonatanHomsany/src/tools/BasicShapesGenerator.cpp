@@ -286,11 +286,11 @@ void BasicShapesGenerator::loadDefaultBoxScene(Scene* scene, Lighting* lighting,
     // 4. Configurar la iluminación exactamente según la captura
     if (!lighting->lights.empty()) {
         Light& mainLight = lighting->lights[0];
-        mainLight.position = glm::vec3(0.6f, 8.4f, -1.4f); // Posicion Luz
+        mainLight.position = glm::vec3(0.6f, 5.4f, 16.6f); // Posicion Luz
         mainLight.color = glm::vec3(1.0f, 1.0f, 1.0f);     // Color Luz
-        mainLight.intensity = 1.38f;                       // Intensidad Luz
-        mainLight.ambientIntensity = 0.25f;                 // Intensidad Amb.
-        mainLight.specularStrength = 0.80f;                 // Fuerza Especular fija
+        mainLight.intensity = 0.56f;                       // Intensidad Luz
+        mainLight.ambientIntensity = 0.50f;                 // Intensidad Amb.
+        mainLight.specularStrength = 0.85f;                 // Fuerza Especular fija
         mainLight.shininess = 48.0f;                        // Brillo fijo
     }
     lighting->activeMode = ShadingMode::BLINN_PHONG;

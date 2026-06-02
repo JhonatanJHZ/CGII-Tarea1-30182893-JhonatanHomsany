@@ -4,6 +4,9 @@
 #include "SceneObject.h"
 #include "Shader.h"
 
+class Scene;
+class Lighting;
+
 struct Color{
     float r, g, b, a;
 };
@@ -28,10 +31,14 @@ public:
     glm::vec3 getOrigin() const;
     glm::vec3 getDirection() const;
 
+    static glm::vec3 Raytracing(Ray ray, Scene* scene, Lighting* lighting, int bounces);
+
+
     private:
 
     bool hitSphere(const glm::vec3& center, float radius, const Ray& ray, float& t_hit, glm::vec3& normal);
 
     bool hitTriangle(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2, const Ray& ray, float& t_hit, glm::vec3& normal);
+
 
 };

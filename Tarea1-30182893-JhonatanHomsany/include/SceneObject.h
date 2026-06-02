@@ -12,7 +12,8 @@ enum class ShapeType{
     NONE,
     SPHERE,
     CONE,
-    CYLINDER
+    CYLINDER,
+    PLANE
 };
 
 struct SceneObject {

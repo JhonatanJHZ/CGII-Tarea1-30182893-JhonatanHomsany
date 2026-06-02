@@ -21,6 +21,9 @@ public:
     static ShadowMode mode;
     static ShadowMappingType shadowMappingType;
     static float biasForShadowMapping;
+    static bool useAdaptativeBias;
+    static bool usePCF;
+    static int pcfKernelRadius;
     static bool showOnlyShadows;
     static bool showDepthMap;
 
@@ -34,4 +37,5 @@ public:
 
     static glm::mat4 getShadowProjectionMatrix(const glm::vec3& lightPos, float groundHeight);
     static void renderPlanarShadows(const Scene* scene, const Shader* flatShader, const Renderer* renderer, const glm::vec3& lightPos, float groundHeight, const glm::mat4& view, const glm::mat4& projection);
+    static glm::mat4 renderShadowMap(const Scene* scene, const Shader* shadowDepthShader, const Renderer* renderer, const glm::vec3& lightPos);
 };

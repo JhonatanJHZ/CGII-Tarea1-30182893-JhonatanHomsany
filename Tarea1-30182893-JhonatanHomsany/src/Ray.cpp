@@ -3,6 +3,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "SceneObject.h"
 #include "../include/tools/GLTFManager.h"
+#include "../include/Scene.h"
+#include "../include/Lighting.h"
 
 Ray::Ray(const glm::vec3 origin, const glm::vec3 direction, Color rgba, float t_min, float t_max){
     this->origin = origin;
@@ -181,3 +183,59 @@ bool Ray::hitTriangle(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3&
 
     return false;
 }
+
+glm::vec3 Ray::Raytracing(Ray ray, Scene* scene, Lighting* lighting, int bounces) {
+    if (bounces <= 0) {
+        return glm::vec3(0.0f);
+    }
+
+    ray.hit_object = nullptr;
+    ray.hit_t = ray.t_max;
+
+    for(SceneObject& obj : scene->objects){
+        ray.intersect(&obj);
+    }
+
+    if(ray.hit_object == nullptr) return glm::vec3(0.0f);
+
+    glm::vec3 hitPoint = ray.getOrigin() + ray.getDirection() * ray.hit_t;
+    glm::vec3 normal = ray.hit_normal;
+    glm::vec3 viewDir = glm::normalize(-ray.getDirection());
+    glm::vec3 finalColor = glm::vec3(0.0f);
+
+    for(Light& light : lighting->lights){
+        glm::vec3 lightDir = glm::normalize(light.position - hitPoint);
+        
+        glm::vec3 objColor = ray.hit_object->color;
+        glm::vec3 ambient = light.color * 0.15f * objColor;
+        finalColor += ambient; 
+        
+        Ray shadowRay(hitPoint + normal * 0.001f, lightDir, Color{0,0,0,0}, 0.0f, glm::distance(light.position, hitPoint));
+        shadowRay.hit_object = nullptr;
+        shadowRay.hit_t = shadowRay.t_max;
+        
+        for(SceneObject& obj : scene->objects){
+            shadowRay.intersect(&obj);
+        }
+
+        if (shadowRay.hit_object == nullptr) {
+            glm::vec3 reflectedDir = glm::reflect(-lightDir, normal);
+            
+            float diff = std::max(0.0f, glm::dot(normal, lightDir));
+            float spec = std::max(0.0f, glm::dot(reflectedDir, viewDir));
+            spec = glm::pow(spec, 32.0f);
+            
+            glm::vec3 diffuse = light.color * diff * objColor;
+            glm::vec3 specular = light.color * spec;
+            
+            finalColor += diffuse + specular;
+        }
+    }
+
+    finalColor.x = std::min(1.0f, finalColor.x);
+    finalColor.y = std::min(1.0f, finalColor.y);
+    finalColor.z = std::min(1.0f, finalColor.z);
+
+    return finalColor;
+}
+

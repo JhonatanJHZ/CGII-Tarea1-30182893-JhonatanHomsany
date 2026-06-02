@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 
 struct GLFWwindow;
 class GLFWManager;
@@ -12,6 +13,8 @@ class Ray;
 class InputPicker;
 class ShadowManager;
 
+using namespace std;
+
 class Application {
 public:
     GLFWwindow* window;
@@ -20,8 +23,10 @@ public:
     Renderer* renderer;
     Shader* shader;
     Shader* flatShader;
+    Shader* shadowDepthShader;
     Scene* scene;
-    Camera* camera;
+    vector<Camera*> cameras;
+    int activeCameraIndex;
     Lighting* lighting;
     Ray* ray;
     InputPicker* picker;
@@ -36,6 +41,5 @@ public:
     void run();
 
     private:
-
     void handleKeyboardEvents(float deltaTime);
 };

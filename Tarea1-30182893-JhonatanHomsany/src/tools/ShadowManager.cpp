@@ -6,11 +6,15 @@
 #include "../include/Mesh.h"
 #include "../include/tools/GLTFManager.h"
 
-ShadowMode ShadowManager::mode = ShadowMode::NONE;
+ShadowMode ShadowManager::mode = ShadowMode::PLANAR;
 ShadowMappingType ShadowManager::shadowMappingType = ShadowMappingType::DIRECTIONAL;
-float ShadowManager::biasForShadowMapping = 0.005f;
+float ShadowManager::biasForShadowMapping = 0.0001f;
+bool ShadowManager::useAdaptativeBias = false;
+bool ShadowManager::usePCF = true;
+int ShadowManager::pcfKernelRadius = 1;
 bool ShadowManager::showOnlyShadows = false;
 bool ShadowManager::showDepthMap = false;
+
 
 unsigned int ShadowManager::depthMapFBO = 0;
 unsigned int ShadowManager::depthMapTexture = 0;
@@ -120,4 +124,58 @@ void ShadowManager::renderPlanarShadows(
     }
     
     glDisable(GL_POLYGON_OFFSET_FILL);
+}
+
+glm::mat4 ShadowManager::renderShadowMap(const Scene* scene, const Shader* shadowDepthShader, const Renderer* renderer, const glm::vec3& lightPos){
+    if (!scene || !shadowDepthShader || !renderer) return glm::mat4(1.0f);
+    
+    glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(shadowDepthShader->ID);
+
+    glm::mat4 lightProjection;
+    glm::mat4 lightView;
+
+    float near_plane = 1.0f, far_plane = 25.0f;
+    
+    if (shadowMappingType == ShadowMappingType::DIRECTIONAL) {
+        float size = 12.0f;
+        lightProjection = glm::ortho(-size, size, -size, size, near_plane, far_plane);
+        
+        lightView = glm::lookAt(lightPos, glm::vec3(0.0f, -7.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    } else {
+        lightProjection = glm::perspective(glm::radians(110.0f), 1.0f, near_plane, far_plane);
+        
+        lightView = glm::lookAt(lightPos, glm::vec3(0.0f, -7.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    }
+
+    glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+    glUniformMatrix4fv(glGetUniformLocation(shadowDepthShader->ID, "lightSpaceMatrix"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_FRONT);
+
+    for (const auto& obj : scene->objects) {
+        if (!obj.meshPointer) continue;
+        
+        if (obj.name == "Piso" || obj.name == "Techo" || 
+            obj.name == "Pared Izquierda" || obj.name == "Pared Derecha" || 
+            obj.name == "Pared del Frente" || obj.name == "Pared Trasera") {
+            continue;
+        }
+
+        glm::mat4 shadowModelMatrix = obj.getModelMatrix();
+        
+        if (obj.type == MeshType::GLTF) {
+            renderer->render(static_cast<const GLTFManager*>(obj.meshPointer), shadowDepthShader, shadowModelMatrix, glm::mat4(1.0f), glm::mat4(1.0f));
+        } else if (obj.type == MeshType::REVOLUTION_SOLID) {
+            renderer->render(static_cast<const Mesh*>(obj.meshPointer), shadowDepthShader, shadowModelMatrix, glm::mat4(1.0f), glm::mat4(1.0f));
+        }
+    }
+
+    glDisable(GL_CULL_FACE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    return lightSpaceMatrix;
 }

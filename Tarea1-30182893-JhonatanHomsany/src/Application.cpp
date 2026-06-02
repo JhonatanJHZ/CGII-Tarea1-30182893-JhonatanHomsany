@@ -74,7 +74,7 @@ void drawSelectionBox(const SceneObject* obj, const glm::mat4& view, const glm::
 
 Application::Application()
     : glfwManager(nullptr), uiManager(nullptr), renderer(nullptr),
-      shader(nullptr), scene(nullptr), camera(nullptr), lighting(nullptr) {}
+      shader(nullptr), scene(nullptr), lighting(nullptr) {}
 
 Application::~Application() {
     cleanup();
@@ -89,12 +89,14 @@ bool Application::init() {
     renderer = new Renderer();
     shader = new Shader("../../../Tarea1-30182893-JhonatanHomsany/shaders/default.vert", "../../../Tarea1-30182893-JhonatanHomsany/shaders/default.frag");
     flatShader = new Shader("../../../Tarea1-30182893-JhonatanHomsany/shaders/flat.vert", "../../../Tarea1-30182893-JhonatanHomsany/shaders/flat.frag");
-    camera = new Camera();
+    shadowDepthShader = new Shader("../../../Tarea1-30182893-JhonatanHomsany/shaders/shadowDepth.vert", "../../../Tarea1-30182893-JhonatanHomsany/shaders/shadowDepth.frag");
+    cameras.push_back(new Camera());
+    activeCameraIndex = 0;
     uiManager = new UIManager(window);
 
     scene = new Scene();
     lighting = new Lighting();
-    ray = new Ray(glm::vec3(-2.45f, -1.8f, -0.9f), glm::vec3(1.65f, -1.45f, 0.2f), Color{32.0f/255.0f, 63.0f/255.0f, 185.0f/255.0f, 1.0f}, 0.0f, 10.0f);
+    ray = new Ray(glm::vec3(-2.45f, -1.8f, -0.9f), glm::vec3(1.65f, -1.45f, 0.2f), Color{0.0f/255.0f, 255.0f/255.0f, 255.0f/255.0f, 1.0f}, 0.0f, 10.0f);
     picker = new InputPicker();
 
     ShadowManager::initShadowFBO();
@@ -118,79 +120,130 @@ void Application::updateAndRender() {
     float currentFrame = (float)glfwGetTime();
     float deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
+
+    Camera* activeCamera = cameras[activeCameraIndex];
+    
     renderer->clear();
     uiManager->newFrame();
-    uiManager->drawInspector(scene, lighting, ray, picker, camera);
-
-    glm::mat4 view = camera->getViewMatrix();
+    uiManager->drawInspector(scene, lighting, ray, picker, cameras, activeCameraIndex);
 
     int display_w, display_h;
     glfwManager->getFrameBufferSize(&display_w, &display_h);
     display_h = std::max(1, display_h);
     float aspect = (float)display_w / (float)display_h;
-    glm::mat4 projection = camera->getProjectionMatrix(aspect);
 
-    if (ShadowManager::mode == ShadowMode::PLANAR) {
-        if (lighting && !lighting->lights.empty()) {
+    if (activeCamera->getRenderMode() == RenderMode::RASTERIZATION) {
+        glm::mat4 view = activeCamera->getViewMatrix();
+        glm::mat4 projection = activeCamera->getProjectionMatrix(aspect);
+
+        glm::mat4 lightSpaceMatrix = glm::mat4(1.0f);
+        if (lighting && !lighting->lights.empty() && ShadowManager::mode == ShadowMode::SHADOW_MAPPING) {
             glm::vec3 lightPos = lighting->lights[0].position;
-            ShadowManager::renderPlanarShadows(scene, flatShader, renderer, lightPos, -7.99f, view, projection);
+            lightSpaceMatrix = ShadowManager::renderShadowMap(scene, shadowDepthShader, renderer, lightPos);
+            glViewport(0, 0, display_w, display_h);
         }
-    } else if (ShadowManager::mode == ShadowMode::SHADOW_MAPPING) {
-        // ... Ejecutar la lógica de Shadow Mapping ...
-    }
 
-    scene->draw(shader, renderer, view, projection, lighting, camera->getPosition());
+        glUseProgram(shader->ID);
+        glUniformMatrix4fv(glGetUniformLocation(shader->ID, "lightSpaceMatrix"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
+        glUniform1i(glGetUniformLocation(shader->ID, "shadowMode"), static_cast<int>(ShadowManager::mode));
+        glUniform1i(glGetUniformLocation(shader->ID, "showOnlyShadows"), static_cast<int>(ShadowManager::showOnlyShadows));
+        glUniform1f(glGetUniformLocation(shader->ID, "biasForShadowMapping"), ShadowManager::biasForShadowMapping); 
+        glUniform1i(glGetUniformLocation(shader->ID, "useAdaptativeBias"), static_cast<int>(ShadowManager::useAdaptativeBias));
+        glUniform1i(glGetUniformLocation(shader->ID, "usePCF"), static_cast<int>(ShadowManager::usePCF));
+        glUniform1i(glGetUniformLocation(shader->ID, "pcfKernelRadius"), ShadowManager::pcfKernelRadius); 
 
-    ray->hit_object = nullptr;
-    ray->hit_t = ray->t_max;
-    for(SceneObject &obj : scene->objects){
-        ray->intersect(&obj);
-    }
-    ray->drawRay(view, projection, flatShader);
-    if(picker && picker->hit_object){
-        drawSelectionBox(picker->hit_object, view, projection, flatShader);
-    }
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, ShadowManager::depthMapTexture);
+        glUniform1i(glGetUniformLocation(shader->ID, "shadowMap"), 1); 
 
-    ImGuiIO& io = ImGui::GetIO();
-    if (glfwGetMouseButton(this->window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && !io.WantCaptureMouse) {
-        double mouseX, mouseY;
-        glfwGetCursorPos(this->window, &mouseX, &mouseY);
-        picker->pick(mouseX, mouseY, display_w, display_h, view, projection, scene);
+        scene->draw(shader, renderer, view, projection, lighting, activeCamera->getPosition());
+
+        if (lighting && !lighting->lights.empty()) {
+            if (ShadowManager::mode == ShadowMode::PLANAR) {
+                glm::vec3 lightPos = lighting->lights[0].position;
+                ShadowManager::renderPlanarShadows(scene, flatShader, renderer, lightPos, -8.0f, view, projection);
+            }
+        }
+
+        if (ShadowManager::mode == ShadowMode::SHADOW_MAPPING && ShadowManager::showDepthMap) {
+            ImGui::Begin("Mapa de Profundidad (FBO)");
+            ImVec2 size = ImVec2(256.0f, 256.0f);
+            ImGui::Image((ImTextureID)(uintptr_t)ShadowManager::depthMapTexture, size, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::End();
+        }
+
+        ray->hit_object = nullptr;
+        ray->hit_t = ray->t_max;
+        for(SceneObject &obj : scene->objects){
+            ray->intersect(&obj);
+        }
+        ray->drawRay(view, projection, flatShader);
+        if(picker && picker->hit_object){
+            drawSelectionBox(picker->hit_object, view, projection, flatShader);
+        }
+
+        ImGuiIO& io = ImGui::GetIO();
+        if (glfwGetMouseButton(this->window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && !io.WantCaptureMouse) {
+            double mouseX, mouseY;
+            glfwGetCursorPos(this->window, &mouseX, &mouseY);
+            picker->pick(mouseX, mouseY, display_w, display_h, view, projection, scene);
+        }
+
+
+    }else if(activeCamera->getRenderMode() == RenderMode::RAY_TRACING){
+        cout << "Raytracing" << endl;
     }
 
     handleKeyboardEvents(deltaTime);
-
     uiManager->render();
     glfwManager->update();
 }
 
+
 void Application::loadBoxScene() {
-    BasicShapesGenerator::loadDefaultBoxScene(scene, lighting, camera);
+    Camera* activeCamera = cameras[activeCameraIndex];
+    BasicShapesGenerator::loadDefaultBoxScene(scene, lighting, activeCamera);
 }
 
 void Application::handleKeyboardEvents(float deltaTime) {
     ImGuiIO& io = ImGui::GetIO();
+    Camera* activeCamera = cameras[activeCameraIndex];
     
     if (!io.WantCaptureKeyboard) {
+        float scrollOffset = io.MouseWheel;
+    
+        if (scrollOffset != 0.0f) {
+            float currentFov = activeCamera->getFov();
+            currentFov -= scrollOffset * 2.5f;
+            currentFov = std::max(10.0f, std::min(120.0f, currentFov));
+            activeCamera->setFov(currentFov);
+        }
         if (glfwGetKey(this->window, GLFW_KEY_W) == GLFW_PRESS) {
-            camera->movement(MovementDirection::FORWARD, deltaTime);
+            activeCamera->movement(MovementDirection::FORWARD, deltaTime);
         }
         if (glfwGetKey(this->window, GLFW_KEY_S) == GLFW_PRESS) {
-            camera->movement(MovementDirection::BACKWARD, deltaTime);
+            activeCamera->movement(MovementDirection::BACKWARD, deltaTime);
         }
         if (glfwGetKey(this->window, GLFW_KEY_A) == GLFW_PRESS) {
-            camera->movement(MovementDirection::LEFT, deltaTime);
+            activeCamera->movement(MovementDirection::LEFT, deltaTime);
         }
         if (glfwGetKey(this->window, GLFW_KEY_D) == GLFW_PRESS) {
-            camera->movement(MovementDirection::RIGHT, deltaTime);
+            activeCamera->movement(MovementDirection::RIGHT, deltaTime);
+        }
+        if(glfwGetKey(this->window, GLFW_KEY_SPACE) == GLFW_PRESS){
+            activeCamera->movement(MovementDirection::UP, deltaTime);
+        }
+        if(glfwGetKey(this->window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS){
+            activeCamera->movement(MovementDirection::DOWN, deltaTime);
         }
     }
+
 
     static bool isMouseCaptured = false;
     static double lastMouseX = 0.0;
     static double lastMouseY = 0.0;
 
-    if (glfwGetKey(this->window, GLFW_KEY_Z) == GLFW_PRESS) {
+    if (glfwGetKey(this->window, GLFW_KEY_Z) == GLFW_PRESS || (glfwGetMouseButton(this->window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)) {
         if (!isMouseCaptured) {
             glfwSetInputMode(this->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             glfwGetCursorPos(this->window, &lastMouseX, &lastMouseY);
@@ -204,7 +257,7 @@ void Application::handleKeyboardEvents(float deltaTime) {
 
             lastMouseX = mouseX;
             lastMouseY = mouseY;
-            camera->rotate(xOffset, yOffset);
+            activeCamera->rotate(xOffset, yOffset);
         }
     } else {
         if (isMouseCaptured) {
@@ -214,14 +267,10 @@ void Application::handleKeyboardEvents(float deltaTime) {
     }
 }
 
-
-
 void Application::cleanup() {
     ShadowManager::cleanupShadowFBO();
     delete uiManager;
     uiManager = nullptr;
-    delete camera;
-    camera = nullptr;
     delete scene;
     scene = nullptr;
     delete lighting;
@@ -230,6 +279,8 @@ void Application::cleanup() {
     shader = nullptr;
     delete flatShader;
     flatShader = nullptr;
+    delete shadowDepthShader;
+    shadowDepthShader = nullptr;
     delete renderer;
     renderer = nullptr;
     delete glfwManager;
@@ -238,4 +289,8 @@ void Application::cleanup() {
     ray = nullptr;
     delete picker;
     picker = nullptr;
+    for (Camera* c : cameras) {
+        delete c;
+    }
+    cameras.clear();
 }

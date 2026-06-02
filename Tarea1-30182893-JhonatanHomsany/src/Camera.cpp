@@ -45,6 +45,14 @@ void Camera::movement(MovementDirection direction, float deltaTime) {
             position += right * velocity;
             target += right * velocity;
             break;
+        case MovementDirection::UP: 
+            position += up * velocity;
+            target += up * velocity;
+            break;
+        case MovementDirection::DOWN: 
+            position -= up * velocity;
+            target -= up * velocity;
+            break;
     }
 }
 
