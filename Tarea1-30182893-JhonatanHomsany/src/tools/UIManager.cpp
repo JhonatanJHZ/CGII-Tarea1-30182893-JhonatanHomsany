@@ -11,10 +11,7 @@
 #include "../../include/Camera.h"
 #include "../../include/tools/BasicShapesGenerator.h"
 #include "../../include/tools/ShadowManager.h"
-
-
 using namespace std;
-
 void UIManager::addInstructionsUI(){
     ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), "Instrucciones");
     ImGui::Separator();
@@ -29,7 +26,6 @@ void UIManager::addInstructionsUI(){
     ImGui::Separator();
     ImGui::Spacing();
 }
-
 void UIManager::generateRevolutionSolid(Scene* scene, InputPicker* picker, ShapeType& activeShapeType){
     vector<Vertex> vertices = RevolutionSolidGenerator::generate(currentSegments, radialSegments, samplePointsPerSegment);
     if (!vertices.empty()) {
@@ -42,7 +38,6 @@ void UIManager::generateRevolutionSolid(Scene* scene, InputPicker* picker, Shape
         newObj.name = namePrefix + " " + to_string(scene->objects.size());
         newObj.type = MeshType::REVOLUTION_SOLID;
         newObj.shape = activeShapeType;           
-        
         newObj.meshPointer = newMesh;
         newObj.position = glm::vec3(0.0f, -4.0f, 0.0f);
         newObj.rotation = glm::vec3(0.0f);
@@ -51,11 +46,9 @@ void UIManager::generateRevolutionSolid(Scene* scene, InputPicker* picker, Shape
         selectedObjectIndex = (int)scene->objects.size() - 1;
     }
 }
-
 void UIManager::addObjectGenerationUI(Scene* scene, InputPicker* picker, ShapeType& activeShapeType){
     ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), "Generador de Solidos de Revolucion");
     ImGui::Separator();
-    
     ImGui::Text("Presets de Contorno:");
     if (ImGui::Button("Cilindro", ImVec2(70, 0))) { RevolutionSolidGenerator::loadCylinderPreset(currentSegments); activeShapeType = ShapeType::CYLINDER; generateRevolutionSolid(scene, picker, activeShapeType); }
     ImGui::SameLine();
@@ -63,12 +56,10 @@ void UIManager::addObjectGenerationUI(Scene* scene, InputPicker* picker, ShapeTy
     ImGui::SameLine();
     if (ImGui::Button("Esfera", ImVec2(70, 0))) { RevolutionSolidGenerator::loadSpherePreset(currentSegments); activeShapeType = ShapeType::SPHERE; generateRevolutionSolid(scene, picker, activeShapeType); 
     }
-    
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
 }
-
 void UIManager::addPickerUI(Scene* scene, InputPicker* picker){
     if(picker->hit_object){
         SceneObject* selectedObject = picker->hit_object;
@@ -87,31 +78,25 @@ void UIManager::addPickerUI(Scene* scene, InputPicker* picker){
         ImGui::Spacing();
     }
 }
-
 void UIManager::addIlluminationUI(Lighting* lighting){
     ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "Configuracion de Iluminacion");
     ImGui::Separator();
-    
     const char* shadingModes[] = { "Flat Shading", "Lambert (Difusa)", "Phong", "Blinn-Phong" };
     int currentMode = static_cast<int>(lighting->activeMode);
     if (ImGui::Combo("Modelo", &currentMode, shadingModes, IM_ARRAYSIZE(shadingModes))) {
         lighting->activeMode = static_cast<ShadingMode>(currentMode);
     }
-    
     if (!lighting->lights.empty()) {
         Light& mainLight = lighting->lights[0];
-        
         ImGui::DragFloat3("Posicion Luz", glm::value_ptr(mainLight.position), 0.1f, -25.0f, 25.0f, "%.1f");
         ImGui::ColorEdit3("Color Luz", glm::value_ptr(mainLight.color));
         ImGui::SliderFloat("Intensidad Luz", &mainLight.intensity, 0.0f, 5.0f, "%.2f");
         ImGui::SliderFloat("Intensidad Ambiental", &mainLight.ambientIntensity, 0.0f, 1.0f, "%.2f");
     }
-    
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
 }
-
 void UIManager::addRaycastUI(Ray* ray){
     ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), "Ray Tracing");
     ImGui::Separator();
@@ -130,22 +115,18 @@ void UIManager::addRaycastUI(Ray* ray){
     ImGui::Separator();
     ImGui::Spacing();
 }
-
 void UIManager::addFileManagementUI(Scene* scene){
     ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.8f, 1.0f), "Gestion de Archivos de Escena");
     ImGui::Separator();
-    
     ImGui::InputText("Ruta Importar", importPathBuffer, IM_ARRAYSIZE(importPathBuffer));
     if (ImGui::Button("Importar Modelo GLTF/GLB", ImVec2(-FLT_MIN, 0))) {
         GLTFManager* gltf = new GLTFManager();
         if (gltf->loadModel(importPathBuffer)) {
             gltf->setupGL();
             SceneObject newObj;
-
             std::string pathStr(importPathBuffer);
             size_t lastSlash = pathStr.find_last_of("/\\");
             std::string fileName = (lastSlash == std::string::npos) ? pathStr : pathStr.substr(lastSlash + 1);
-            
             newObj.name = fileName;
             newObj.type = MeshType::GLTF;
             newObj.meshPointer = gltf;
@@ -161,9 +142,7 @@ void UIManager::addFileManagementUI(Scene* scene){
             std::cerr << "Error al importar el modelo: " << importPathBuffer << std::endl;
         }
     }
-    
     ImGui::Spacing();
-    
     ImGui::InputText("Ruta Guardar", savePathBuffer, IM_ARRAYSIZE(savePathBuffer));
     if (ImGui::Button("Guardar Escena (.glb)", ImVec2(-FLT_MIN, 0))) {
         if (scene->saveScene(savePathBuffer)) {
@@ -172,9 +151,7 @@ void UIManager::addFileManagementUI(Scene* scene){
             std::cerr << "Error al guardar la escena en: " << savePathBuffer << std::endl;
         }
     }
-    
     ImGui::Spacing();
-    
     ImGui::InputText("Ruta Cargar", loadPathBuffer, IM_ARRAYSIZE(loadPathBuffer));
     if (ImGui::Button("Cargar Escena (.glb)", ImVec2(-FLT_MIN, 0))) {
         if (scene->loadScene(loadPathBuffer)) {
@@ -185,10 +162,8 @@ void UIManager::addFileManagementUI(Scene* scene){
         }
     }
 }
-
 void UIManager::addCameraUI(std::vector<Camera*>& cameras, int& activeCameraIndex) {
     if (cameras.empty()) return;
-    
     static glm::vec3 nextCameraPos(0.0f, 5.0f, 8.0f); 
     ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Nueva Camara de Seguridad");
     ImGui::DragFloat3("Posicion Inicial", glm::value_ptr(nextCameraPos), 0.1f, -20.0f, 20.0f, "%.2f");
@@ -197,60 +172,55 @@ void UIManager::addCameraUI(std::vector<Camera*>& cameras, int& activeCameraInde
         cameras.push_back(newCamera); 
         activeCameraIndex = (int)cameras.size() - 1; 
     }
-
-    
     ImGui::TextColored(ImVec4(0.2f, 0.6f, 1.0f, 1.0f), "Selector de Camara");
     ImGui::Separator();
-
     for (int i = 0; i < cameras.size(); i++) {
         std::string label = "Camara " + std::to_string(i + 1);
         ImGui::RadioButton(label.c_str(), &activeCameraIndex, i);
-        
         if (i < cameras.size() - 1 && (i + 1) % 3 != 0) { 
             ImGui::SameLine(); 
         }
     }
     ImGui::Spacing();
-    
     Camera* currentCamera = cameras[activeCameraIndex];
-
     ImGui::TextColored(ImVec4(0.2f, 0.6f, 1.0f, 1.0f), "Modo de Renderizado");
     ImGui::Separator();
-    
     int currentMode = static_cast<int>(currentCamera->getRenderMode());
     if (ImGui::RadioButton("Rasterizacion", &currentMode, 0)) {
         currentCamera->setRenderMode(RenderMode::RASTERIZATION);
     }
     ImGui::SameLine();
     if (ImGui::RadioButton("Ray Tracing", &currentMode, 1)) {
-        currentCamera->setRenderMode(RenderMode::RAY_TRACING);
+        for (Camera* cam : cameras) {
+            cam->setRenderMode(RenderMode::RAY_TRACING);
+        }
     }
-
-    ImGui::Spacing();
+    if (currentMode == 1) {
+        int bounces = cameras[activeCameraIndex]->getRayBounces();
+        if (ImGui::SliderInt("Rebotes Maximos", &bounces, 1, 10)) {
+            for (Camera* cam : cameras) {
+                cam->setRayBounces(bounces);
+            }
+        }
+    } ImGui::Spacing();
     ImGui::TextColored(ImVec4(0.2f, 0.6f, 1.0f, 1.0f), "Propiedades de Transformacion");
     ImGui::Separator();
-    
     glm::vec3 pos = currentCamera->getPosition();
     if (ImGui::DragFloat3("Posicion Camara", glm::value_ptr(pos), 0.05f, -20.0f, 20.0f, "%.2f")) {
         currentCamera->setPosition(pos);
     }
-    
     glm::vec3 tgt = currentCamera->getTarget();
     if (ImGui::DragFloat3("Objetivo (Target)", glm::value_ptr(tgt), 0.05f, -20.0f, 20.0f, "%.2f")) {
         currentCamera->setTarget(tgt);
     }
-    
     float fov = currentCamera->getFov();
     if (ImGui::SliderFloat("FOV", &fov, 10.0f, 120.0f, "%.1f")) {
         currentCamera->setFov(fov);
     }
-    
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
 }
-
-
 void UIManager::addShadowModesUI(){
     ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Controles de sombras");
     const char* shadowModes[] = { "Sin sombras", "Sombras Planares", "Shadow Mapping (FBO)" };
@@ -258,21 +228,17 @@ void UIManager::addShadowModesUI(){
     if (ImGui::Combo("Modo de Sombras", &currentShadowMode, shadowModes, IM_ARRAYSIZE(shadowModes))) {
         ShadowManager::mode = static_cast<ShadowMode>(currentShadowMode);
     }
-
     if (ShadowManager::mode == ShadowMode::SHADOW_MAPPING) {
         ImGui::Separator();
-
         const char* shadowMappingTypes[] = { "Direccional", "Spot" };
         int currentShadowMappingType = static_cast<int>(ShadowManager::shadowMappingType);
         if (ImGui::Combo("Tipo de Shadow Mapping", &currentShadowMappingType, shadowMappingTypes, IM_ARRAYSIZE(shadowMappingTypes))) {
             ShadowManager::shadowMappingType = static_cast<ShadowMappingType>(currentShadowMappingType);
         }
-        
         ImGui::SliderFloat("Shadow Bias", &ShadowManager::biasForShadowMapping, 0.0001f, 0.05f, "%.4f");
         ImGui::Checkbox("Ver Solo Sombras (B&W)", &ShadowManager::showOnlyShadows);
         ImGui::Checkbox("Ver Mapa de Profundidad (FBO)", &ShadowManager::showDepthMap);
         ImGui::Checkbox("Usar bias adaptativo para solucionar Peter Panning", &ShadowManager::useAdaptativeBias);
-
         ImGui::Separator();
         ImGui::Checkbox("Activar Suavizado de Bordes (PCF)", &ShadowManager::usePCF);
         if (ShadowManager::usePCF) {
@@ -284,7 +250,6 @@ void UIManager::addShadowModesUI(){
         }
     }
 }
-
 UIManager::UIManager(GLFWwindow* window) {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -293,31 +258,24 @@ UIManager::UIManager(GLFWwindow* window) {
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 }
-
 UIManager::~UIManager() {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 }
-
 void UIManager::newFrame() {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 }
-
 void UIManager::drawInspector(Scene* scene, Lighting* lighting, Ray* ray, InputPicker* picker, std::vector<Camera*>& cameras, int& activeCameraIndex) {
     if (!scene || !lighting) return;
-
     static ShapeType activeShapeType = ShapeType::CYLINDER;
-
     float targetWidth = 500.0f;
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(targetWidth, viewport->WorkSize.y), ImGuiCond_Always);
-    
     ImGui::Begin("Controles del Escenario", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
-
     addInstructionsUI();
     addObjectGenerationUI(scene, picker, activeShapeType);
     addCameraUI(cameras, activeCameraIndex);
@@ -326,7 +284,6 @@ void UIManager::drawInspector(Scene* scene, Lighting* lighting, Ray* ray, InputP
     addRaycastUI(ray);
     addShadowModesUI();
     addFileManagementUI(scene);
-
     if (cameras[activeCameraIndex]) {
         ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.2f, 1.0f), "Escena Especial");
         ImGui::Separator();
@@ -334,10 +291,8 @@ void UIManager::drawInspector(Scene* scene, Lighting* lighting, Ray* ray, InputP
             BasicShapesGenerator::loadDefaultBoxScene(scene, lighting, cameras[activeCameraIndex]);
         }
     }
-    
     ImGui::End();
 }
-
 void UIManager::render() {
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

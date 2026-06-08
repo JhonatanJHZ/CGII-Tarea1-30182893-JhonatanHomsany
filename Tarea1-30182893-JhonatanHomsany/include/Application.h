@@ -1,6 +1,5 @@
 #pragma once
 #include <vector>
-
 struct GLFWwindow;
 class GLFWManager;
 class UIManager;
@@ -12,9 +11,7 @@ class Lighting;
 class Ray;
 class InputPicker;
 class ShadowManager;
-
 using namespace std;
-
 class Application {
 public:
     GLFWwindow* window;
@@ -30,16 +27,16 @@ public:
     Lighting* lighting;
     Ray* ray;
     InputPicker* picker;
-
     bool init();
     void updateAndRender();
     void cleanup();
     void loadBoxScene();
-
     Application();
     ~Application();
     void run();
-
-    private:
+private:
+    unsigned int quadVAO = 0;
+    unsigned int quadVBO = 0;
+    Shader* raytraceShader = nullptr;
     void handleKeyboardEvents(float deltaTime);
 };

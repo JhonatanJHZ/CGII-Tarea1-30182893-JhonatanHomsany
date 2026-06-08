@@ -1,6 +1,5 @@
 #include "../../include/tools/GLFWManager.h"
 using namespace std;
-
 GLFWManager::GLFWManager(){
     if (!glfwInit()) {
         cerr << "Fallo al inicializar GLFW" << endl;
@@ -11,15 +10,12 @@ GLFWManager::GLFWManager(){
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 }
-
 GLFWManager::~GLFWManager(){
     glfwTerminate();
 }
-
 void GLFWManager::framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
-
 GLFWwindow* GLFWManager::createWindow(int width, int height, const char* title){
     window = glfwCreateWindow(width, height, title, NULL, NULL);
     if (!window) {
@@ -34,16 +30,13 @@ GLFWwindow* GLFWManager::createWindow(int width, int height, const char* title){
     glfwSetFramebufferSizeCallback(window, GLFWManager::framebuffer_size_callback);
     return window;
 }
-
 void GLFWManager::getFrameBufferSize(int* width, int* height) {
     glfwGetFramebufferSize(window, width, height);
 }
-
 void GLFWManager::update() {
     glfwSwapBuffers(window);
     glfwPollEvents();
 }
-
 bool GLFWManager::shouldClose() {
     return glfwWindowShouldClose(window);
 }

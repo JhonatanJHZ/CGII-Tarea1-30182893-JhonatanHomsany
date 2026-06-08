@@ -1,10 +1,7 @@
 #include "../include/tools/GLTFManager.h"
 #include <iostream>
-
 GLTFManager::GLTFManager() {
-    
 }
-
 GLTFManager::~GLTFManager() {
     for (auto& prim : primitives) {
         if (prim.VAO) glDeleteVertexArrays(1, &prim.VAO);
@@ -12,11 +9,9 @@ GLTFManager::~GLTFManager() {
         if (prim.EBO) glDeleteBuffers(1, &prim.EBO);
     }
 }
-
 bool GLTFManager::loadModel(const std::string& filename) {
     tinygltf3::ErrorStack errors;
     tg3_error_code err = tinygltf3::parse_file(model, errors, filename.c_str());
-
     if (err != TG3_OK) {
         for (uint32_t i = 0; i < errors.count(); i++) {
             const tg3_error_entry* entry = errors.entry(i);
@@ -25,18 +20,14 @@ bool GLTFManager::loadModel(const std::string& filename) {
         }
         return false;
     }
-    
     return true;
 }
-
 void GLTFManager::setupGL() {
     if (model->meshes_count == 0) return;
-
     for (uint32_t m = 0; m < model->meshes_count; ++m) {
         const tg3_mesh& mesh = model->meshes[m];
         for (uint32_t p = 0; p < mesh.primitives_count; ++p) {
             const tg3_primitive& prim = mesh.primitives[p];
-            
             int posAccessorIdx = -1;
             int normAccessorIdx = -1;
             for (uint32_t a = 0; a < prim.attributes_count; ++a) {
@@ -48,24 +39,19 @@ void GLTFManager::setupGL() {
                     normAccessorIdx = attr.value;
                 }
             }
-
             if (posAccessorIdx == -1) continue;
-
             const tg3_accessor* posAccessor = &model->accessors[posAccessorIdx];
             const tg3_buffer_view* posBV = posAccessor->buffer_view >= 0 ? &model->buffer_views[posAccessor->buffer_view] : nullptr;
             const tg3_buffer* posBuffer = posBV ? &model->buffers[posBV->buffer] : nullptr;
             const uint8_t* posData = posBuffer ? posBuffer->data.data + posBV->byte_offset + posAccessor->byte_offset : nullptr;
             int posStride = posBV ? (posBV->byte_stride > 0 ? posBV->byte_stride : 12) : 12;
-
             const tg3_accessor* normAccessor = normAccessorIdx >= 0 ? &model->accessors[normAccessorIdx] : nullptr;
             const tg3_buffer_view* normBV = (normAccessor && normAccessor->buffer_view >= 0) ? &model->buffer_views[normAccessor->buffer_view] : nullptr;
             const tg3_buffer* normBuffer = normBV ? &model->buffers[normBV->buffer] : nullptr;
             const uint8_t* normData = normBuffer ? normBuffer->data.data + normBV->byte_offset + normAccessor->byte_offset : nullptr;
             int normStride = normBV ? (normBV->byte_stride > 0 ? normBV->byte_stride : 12) : 12;
-
             std::vector<Vertex> vertices;
             vertices.resize(posAccessor->count);
-
             for (uint64_t i = 0; i < posAccessor->count; ++i) {
                 Vertex v;
                 if (posData) {
@@ -74,7 +60,6 @@ void GLTFManager::setupGL() {
                 } else {
                     v.position = glm::vec3(0.0f);
                 }
-
                 if (normData) {
                     const float* n = reinterpret_cast<const float*>(normData + i * normStride);
                     v.normal = glm::vec3(n[0], n[1], n[2]);
@@ -83,25 +68,20 @@ void GLTFManager::setupGL() {
                 }
                 vertices[i] = v;
             }
-
             GLTFPrimitive gltfPrim;
             gltfPrim.vertexCount = (unsigned int)posAccessor->count;
             gltfPrim.mode = (prim.mode == -1) ? GL_TRIANGLES : prim.mode;
-
             std::vector<unsigned int> indices;
             if (prim.indices != -1) {
                 const tg3_accessor* idxAccessor = &model->accessors[prim.indices];
                 const tg3_buffer_view* idxBV = idxAccessor->buffer_view >= 0 ? &model->buffer_views[idxAccessor->buffer_view] : nullptr;
                 const tg3_buffer* idxBuffer = idxBV ? &model->buffers[idxBV->buffer] : nullptr;
                 const uint8_t* idxData = idxBuffer ? idxBuffer->data.data + idxBV->byte_offset + idxAccessor->byte_offset : nullptr;
-                
                 int componentSize = 0;
                 if (idxAccessor->component_type == TG3_COMPONENT_TYPE_UNSIGNED_BYTE) componentSize = 1;
                 else if (idxAccessor->component_type == TG3_COMPONENT_TYPE_UNSIGNED_SHORT) componentSize = 2;
                 else if (idxAccessor->component_type == TG3_COMPONENT_TYPE_UNSIGNED_INT) componentSize = 4;
-
                 int idxStride = idxBV ? (idxBV->byte_stride > 0 ? idxBV->byte_stride : componentSize) : componentSize;
-
                 if (idxData) {
                     indices.resize(idxAccessor->count);
                     for (uint64_t i = 0; i < idxAccessor->count; ++i) {
@@ -120,41 +100,32 @@ void GLTFManager::setupGL() {
                     gltfPrim.indexCount = (unsigned int)idxAccessor->count;
                 }
             }
-
             glGenVertexArrays(1, &gltfPrim.VAO);
             glGenBuffers(1, &gltfPrim.VBO);
-
             glBindVertexArray(gltfPrim.VAO);
             glBindBuffer(GL_ARRAY_BUFFER, gltfPrim.VBO);
             glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
-
             if (gltfPrim.hasIndices) {
                 glGenBuffers(1, &gltfPrim.EBO);
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gltfPrim.EBO);
                 glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
             }
-
             glEnableVertexAttribArray(0);
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
-
             glEnableVertexAttribArray(1);
             glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
-
             glBindVertexArray(0);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             if (gltfPrim.hasIndices) {
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
             }
-
             primitives.push_back(gltfPrim);
         }
     }
 }
-
 void GLTFManager::draw() const {
     for (const auto& prim : primitives) {
         if (prim.VAO == 0) continue;
-
         glBindVertexArray(prim.VAO);
         if (prim.hasIndices) {
             glDrawElements(prim.mode, prim.indexCount, GL_UNSIGNED_INT, 0);
@@ -164,16 +135,13 @@ void GLTFManager::draw() const {
     }
     glBindVertexArray(0);
 }
-
 std::vector<Vertex> GLTFManager::getVertices() const {
     std::vector<Vertex> all_vertices;
     if (model->meshes_count == 0) return all_vertices;
-
     for (uint32_t m_idx = 0; m_idx < model->meshes_count; ++m_idx) {
         const tg3_mesh& mesh = model->meshes[m_idx];
         for (uint32_t p_idx = 0; p_idx < mesh.primitives_count; ++p_idx) {
             const tg3_primitive& prim = mesh.primitives[p_idx];
-            
             int posAccessorIdx = -1;
             int normAccessorIdx = -1;
             for (uint32_t a = 0; a < prim.attributes_count; ++a) {
@@ -185,21 +153,17 @@ std::vector<Vertex> GLTFManager::getVertices() const {
                     normAccessorIdx = attr.value;
                 }
             }
-            
             if (posAccessorIdx == -1) continue;
-            
             const tg3_accessor* posAccessor = &model->accessors[posAccessorIdx];
             const tg3_buffer_view* posBV = posAccessor->buffer_view >= 0 ? &model->buffer_views[posAccessor->buffer_view] : nullptr;
             const tg3_buffer* posBuffer = posBV ? &model->buffers[posBV->buffer] : nullptr;
             const uint8_t* posData = posBuffer ? posBuffer->data.data + posBV->byte_offset + posAccessor->byte_offset : nullptr;
             int posStride = posBV ? (posBV->byte_stride > 0 ? posBV->byte_stride : 12) : 12;
-            
             const tg3_accessor* normAccessor = normAccessorIdx >= 0 ? &model->accessors[normAccessorIdx] : nullptr;
             const tg3_buffer_view* normBV = (normAccessor && normAccessor->buffer_view >= 0) ? &model->buffer_views[normAccessor->buffer_view] : nullptr;
             const tg3_buffer* normBuffer = normBV ? &model->buffers[normBV->buffer] : nullptr;
             const uint8_t* normData = normBuffer ? normBuffer->data.data + normBV->byte_offset + normAccessor->byte_offset : nullptr;
             int normStride = normBV ? (normBV->byte_stride > 0 ? normBV->byte_stride : 12) : 12;
-            
             std::vector<Vertex> temp_vertices;
             temp_vertices.resize(posAccessor->count);
             for (uint64_t v_idx = 0; v_idx < posAccessor->count; ++v_idx) {
@@ -218,20 +182,16 @@ std::vector<Vertex> GLTFManager::getVertices() const {
                 }
                 temp_vertices[v_idx] = v;
             }
-            
             if (prim.indices != -1) {
                 const tg3_accessor* idxAccessor = &model->accessors[prim.indices];
                 const tg3_buffer_view* idxBV = idxAccessor->buffer_view >= 0 ? &model->buffer_views[idxAccessor->buffer_view] : nullptr;
                 const tg3_buffer* idxBuffer = idxBV ? &model->buffers[idxBV->buffer] : nullptr;
                 const uint8_t* idxData = idxBuffer ? idxBuffer->data.data + idxBV->byte_offset + idxAccessor->byte_offset : nullptr;
-                
                 int componentSize = 0;
                 if (idxAccessor->component_type == TG3_COMPONENT_TYPE_UNSIGNED_BYTE) componentSize = 1;
                 else if (idxAccessor->component_type == TG3_COMPONENT_TYPE_UNSIGNED_SHORT) componentSize = 2;
                 else if (idxAccessor->component_type == TG3_COMPONENT_TYPE_UNSIGNED_INT) componentSize = 4;
-                
                 int idxStride = idxBV ? (idxBV->byte_stride > 0 ? idxBV->byte_stride : componentSize) : componentSize;
-                
                 if (idxData) {
                     for (uint64_t idx_i = 0; idx_i < idxAccessor->count; ++idx_i) {
                         unsigned int idx_val = 0;

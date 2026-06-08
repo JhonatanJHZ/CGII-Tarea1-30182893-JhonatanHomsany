@@ -2,12 +2,10 @@
 #include <string>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
 enum class MeshType {
     GLTF,
     REVOLUTION_SOLID
 };
-
 enum class ShapeType{
     NONE,
     SPHERE,
@@ -15,19 +13,19 @@ enum class ShapeType{
     CYLINDER,
     PLANE
 };
-
 struct SceneObject {
     std::string name;
     MeshType type;
     void* meshPointer;
     ShapeType shape = ShapeType::NONE;
     float localRadius = 1.0f;
-
+    float reflectivity = 0.0f;
+    float transparency = 0.0f;
+    float refractiveIndex = 1.0f;
     glm::vec3 position = glm::vec3(0.0f);
     glm::vec3 rotation = glm::vec3(0.0f); 
     glm::vec3 scale = glm::vec3(1.0f);
     glm::vec3 color = glm::vec3(0.8f);
-    
     glm::mat4 getModelMatrix() const {
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, position);

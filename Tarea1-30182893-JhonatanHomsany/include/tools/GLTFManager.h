@@ -5,7 +5,6 @@
 #include <glad/glad.h>
 #include <tiny_gltf_v3.h> 
 #include "../Mesh.h"
-
 struct GLTFPrimitive {
     unsigned int VAO = 0;
     unsigned int VBO = 0;
@@ -15,15 +14,12 @@ struct GLTFPrimitive {
     int mode = 4;
     bool hasIndices = false;
 };
-
 class GLTFManager {
 public:
     tinygltf3::Model model;
     std::vector<GLTFPrimitive> primitives;
-
     GLTFManager();
     ~GLTFManager();
-
     bool loadModel(const std::string& filename);
     void setupGL();
     void draw() const;

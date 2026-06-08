@@ -2,14 +2,12 @@
 #include <vector>
 #include <string>
 #include <glm/glm.hpp>
-
 enum class ShadingMode {
     FLAT = 0,
     LAMBERT = 1,
     PHONG = 2,
     BLINN_PHONG = 3
 };
-
 struct Light {
     std::string name;
     glm::vec3 position = glm::vec3(2.0f, -4.5f, 5.0f);
@@ -19,12 +17,10 @@ struct Light {
     float specularStrength = 0.5f;
     float shininess = 32.0f;
 };
-
 class Lighting {
 public:
     std::vector<Light> lights;
     ShadingMode activeMode = ShadingMode::FLAT;
-
     Lighting() {
         Light defaultLight;
         defaultLight.name = "Luz Principal";
