@@ -213,6 +213,15 @@ void Application::updateAndRender() {
                 glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".reflectivity").c_str()), obj.reflectivity);
                 glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".transparency").c_str()), obj.transparency);
                 glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".refractiveIndex").c_str()), obj.refractiveIndex);
+                glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".textureType").c_str()), static_cast<int>(obj.textureType));
+                glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".hasBumpMap").c_str()), obj.bumpMapID != 0 ? 1 : 0);
+                glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".albedoMapID").c_str()), obj.albedoMapID);
+                if (obj.bumpMapID != 0) {
+                    glActiveTexture(GL_TEXTURE3);
+                    glBindTexture(GL_TEXTURE_2D, obj.bumpMapID);
+                    glUniform1i(glGetUniformLocation(raytraceShader->ID, "globalBumpMap"), 3);
+                }
+
                 sphereCount++;
             }
         }
@@ -234,11 +243,37 @@ void Application::updateAndRender() {
         }
         glUniform1i(glGetUniformLocation(raytraceShader->ID, "numPlanes"), planeCount);
         int triCount = 0;
+        int cylCount = 0;
+        int boxCount = 0;
         for (SceneObject& obj : scene->objects) {
-            if (obj.shape == ShapeType::NONE && obj.type == MeshType::REVOLUTION_SOLID && obj.meshPointer != nullptr) {
+            if (obj.shape == ShapeType::CYLINDER && cylCount < 10) {
+                std::string base = "cylinders[" + std::to_string(cylCount) + "]";
+                glm::mat4 invModel = glm::inverse(obj.getModelMatrix());
+                glUniformMatrix4fv(glGetUniformLocation(raytraceShader->ID, (base + ".invModel").c_str()), 1, GL_FALSE, glm::value_ptr(invModel));
+                glUniform3fv(glGetUniformLocation(raytraceShader->ID, (base + ".color").c_str()), 1, glm::value_ptr(obj.color));
+                glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".reflectivity").c_str()), obj.reflectivity);
+                glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".transparency").c_str()), obj.transparency);
+                glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".refractiveIndex").c_str()), obj.refractiveIndex);
+                glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".textureType").c_str()), static_cast<int>(obj.textureType));
+                glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".hasBumpMap").c_str()), obj.bumpMapID != 0 ? 1 : 0);
+                glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".albedoMapID").c_str()), obj.albedoMapID);
+                cylCount++;
+            } else if (obj.shape == ShapeType::CUBE && boxCount < 10) {
+                std::string base = "boxes[" + std::to_string(boxCount) + "]";
+                glm::mat4 invModel = glm::inverse(obj.getModelMatrix());
+                glUniformMatrix4fv(glGetUniformLocation(raytraceShader->ID, (base + ".invModel").c_str()), 1, GL_FALSE, glm::value_ptr(invModel));
+                glUniform3fv(glGetUniformLocation(raytraceShader->ID, (base + ".color").c_str()), 1, glm::value_ptr(obj.color));
+                glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".reflectivity").c_str()), obj.reflectivity);
+                glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".transparency").c_str()), obj.transparency);
+                glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".refractiveIndex").c_str()), obj.refractiveIndex);
+                glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".textureType").c_str()), static_cast<int>(obj.textureType));
+                glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".hasBumpMap").c_str()), obj.bumpMapID != 0 ? 1 : 0);
+                glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".albedoMapID").c_str()), obj.albedoMapID);
+                boxCount++;
+            } else if (obj.shape == ShapeType::NONE && obj.type == MeshType::REVOLUTION_SOLID && obj.meshPointer != nullptr) {
                 glm::mat4 model = obj.getModelMatrix();
                 const auto& vertices = static_cast<Mesh*>(obj.meshPointer)->getVertices();
-                for (size_t i = 0; i < vertices.size() && triCount < 50; i += 3) {
+                for (size_t i = 0; i < vertices.size() && triCount < 200; i += 3) {
                     glm::vec3 v0 = glm::vec3(model * glm::vec4(vertices[i].position, 1.0f));
                     glm::vec3 v1 = glm::vec3(model * glm::vec4(vertices[i+1].position, 1.0f));
                     glm::vec3 v2 = glm::vec3(model * glm::vec4(vertices[i+2].position, 1.0f));
@@ -254,11 +289,27 @@ void Application::updateAndRender() {
                     glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".reflectivity").c_str()), obj.reflectivity);
                     glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".transparency").c_str()), obj.transparency);
                     glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".refractiveIndex").c_str()), obj.refractiveIndex);
+                    glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".textureType").c_str()), static_cast<int>(obj.textureType));
+                    glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".hasBumpMap").c_str()), obj.bumpMapID != 0 ? 1 : 0);
+                    glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".albedoMapID").c_str()), obj.albedoMapID);
+                    glUniform3fv(glGetUniformLocation(raytraceShader->ID, (base + ".local_v0").c_str()), 1, glm::value_ptr(vertices[i].position));
+                    glUniform3fv(glGetUniformLocation(raytraceShader->ID, (base + ".local_v1").c_str()), 1, glm::value_ptr(vertices[i+1].position));
+                    glUniform3fv(glGetUniformLocation(raytraceShader->ID, (base + ".local_v2").c_str()), 1, glm::value_ptr(vertices[i+2].position));
                     triCount++;
                 }
             }
         }
         glUniform1i(glGetUniformLocation(raytraceShader->ID, "numTriangles"), triCount);
+        glUniform1i(glGetUniformLocation(raytraceShader->ID, "numCylinders"), cylCount);
+        glUniform1i(glGetUniformLocation(raytraceShader->ID, "numBoxes"), boxCount);
+        
+        for (int i = 1; i <= 5; i++) {
+            glActiveTexture(GL_TEXTURE3 + i);
+            glBindTexture(GL_TEXTURE_2D, i);
+            std::string name = "albedo" + std::to_string(i);
+            glUniform1i(glGetUniformLocation(raytraceShader->ID, name.c_str()), 3 + i);
+        }
+
         glBindVertexArray(quadVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glBindVertexArray(0);

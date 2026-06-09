@@ -71,6 +71,32 @@ void Scene::draw(const Shader* shader, const Renderer* renderer,
         if (!obj.meshPointer) continue;
         glm::mat4 modelMatrix = obj.getModelMatrix();
         glUniform3fv(glGetUniformLocation(shader->ID, "objectColor"), 1, glm::value_ptr(obj.color));
+        
+        glUniform1i(glGetUniformLocation(shader->ID, "textureType"), static_cast<int>(obj.textureType));
+        
+        bool hasNormal = (obj.normalMapID != 0);
+        bool hasBump = (obj.bumpMapID != 0);
+        bool hasAlbedo = (obj.albedoMapID != 0);
+        glUniform1i(glGetUniformLocation(shader->ID, "hasNormalMap"), hasNormal);
+        glUniform1i(glGetUniformLocation(shader->ID, "hasBumpMap"), hasBump);
+        glUniform1i(glGetUniformLocation(shader->ID, "hasAlbedoMap"), hasAlbedo);
+
+        if (hasNormal) {
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, obj.normalMapID);
+            glUniform1i(glGetUniformLocation(shader->ID, "normalMap"), 2);
+        }
+        if (hasBump) {
+            glActiveTexture(GL_TEXTURE3);
+            glBindTexture(GL_TEXTURE_2D, obj.bumpMapID);
+            glUniform1i(glGetUniformLocation(shader->ID, "bumpMap"), 3);
+        }
+        if (hasAlbedo) {
+            glActiveTexture(GL_TEXTURE4);
+            glBindTexture(GL_TEXTURE_2D, obj.albedoMapID);
+            glUniform1i(glGetUniformLocation(shader->ID, "albedoMap"), 4);
+        }
+
         if (obj.type == MeshType::GLTF) {
             renderer->render(static_cast<const GLTFManager*>(obj.meshPointer), shader, modelMatrix, view, projection);
         } else if (obj.type == MeshType::REVOLUTION_SOLID) {

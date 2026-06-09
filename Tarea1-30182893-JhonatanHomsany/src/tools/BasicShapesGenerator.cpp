@@ -47,6 +47,69 @@ std::vector<Vertex> BasicShapesGenerator::generateCube(float size, bool inwardNo
     };
     return vertices;
 }
+
+std::vector<Vertex> BasicShapesGenerator::generateCylinder(float radius, float height, int sectors) {
+    std::vector<Vertex> vertices;
+    float halfHeight = height * 0.5f;
+
+    for (int i = 0; i < sectors; ++i) {
+        float theta0 = 2.0f * glm::pi<float>() * (float)i / (float)sectors;
+        float theta1 = 2.0f * glm::pi<float>() * (float)(i + 1) / (float)sectors;
+
+        float cos0 = std::cos(theta0);
+        float sin0 = std::sin(theta0);
+        float cos1 = std::cos(theta1);
+        float sin1 = std::sin(theta1);
+
+        glm::vec3 n0(cos0, 0.0f, sin0);
+        glm::vec3 n1(cos1, 0.0f, sin1);
+
+        glm::vec3 bl(radius * cos0, -halfHeight, radius * sin0); 
+        glm::vec3 br(radius * cos1, -halfHeight, radius * sin1); 
+        glm::vec3 tl(radius * cos0,  halfHeight, radius * sin0); 
+        glm::vec3 tr(radius * cos1,  halfHeight, radius * sin1); 
+
+        vertices.push_back({ bl, n0 });
+        vertices.push_back({ br, n1 });
+        vertices.push_back({ tr, n1 });
+
+        vertices.push_back({ bl, n0 });
+        vertices.push_back({ tr, n1 });
+        vertices.push_back({ tl, n0 });
+    }
+
+    glm::vec3 topCenter(0.0f, halfHeight, 0.0f);
+    glm::vec3 topNormal(0.0f, 1.0f, 0.0f);
+    for (int i = 0; i < sectors; ++i) {
+        float theta0 = 2.0f * glm::pi<float>() * (float)i / (float)sectors;
+        float theta1 = 2.0f * glm::pi<float>() * (float)(i + 1) / (float)sectors;
+
+        glm::vec3 p0(radius * std::cos(theta0), halfHeight, radius * std::sin(theta0));
+        glm::vec3 p1(radius * std::cos(theta1), halfHeight, radius * std::sin(theta1));
+
+        vertices.push_back({ topCenter, topNormal });
+        vertices.push_back({ p1, topNormal });
+        vertices.push_back({ p0, topNormal });
+    }
+
+    glm::vec3 bottomCenter(0.0f, -halfHeight, 0.0f);
+    glm::vec3 bottomNormal(0.0f, -1.0f, 0.0f);
+    for (int i = 0; i < sectors; ++i) {
+        float theta0 = 2.0f * glm::pi<float>() * (float)i / (float)sectors;
+        float theta1 = 2.0f * glm::pi<float>() * (float)(i + 1) / (float)sectors;
+
+        glm::vec3 p0(radius * std::cos(theta0), -halfHeight, radius * std::sin(theta0));
+        glm::vec3 p1(radius * std::cos(theta1), -halfHeight, radius * std::sin(theta1));
+
+        vertices.push_back({ bottomCenter, bottomNormal });
+        vertices.push_back({ p0, bottomNormal });
+        vertices.push_back({ p1, bottomNormal });
+    }
+
+    return vertices;
+}
+
+
 std::vector<Vertex> BasicShapesGenerator::generatePyramid(float baseSize, float height) {
     float halfBase = baseSize * 0.5f;
     float halfHeight = height * 0.5f;
@@ -231,6 +294,51 @@ void BasicShapesGenerator::loadDefaultBoxScene(Scene* scene, Lighting* lighting,
     sphObj.color = glm::vec3(41.0f / 255.0f, 69.0f / 255.0f, 69.0f / 255.0f);
     sphObj.reflectivity = 0.8f; 
     scene->addObject(sphObj);
+
+    Mesh* diceMesh = new Mesh(cubeVerts);
+    SceneObject diceObj;
+    diceObj.name = "Dado";
+    diceObj.type = MeshType::REVOLUTION_SOLID;
+    diceObj.shape = ShapeType::CUBE;
+    diceObj.meshPointer = diceMesh;
+    diceObj.position = glm::vec3(-4.5f, -6.9f, -5.0f);
+    diceObj.rotation = glm::vec3(0.0f, 0.0f, 0.0f); 
+    diceObj.scale = glm::vec3(2.0f);
+    diceObj.color = glm::vec3(0.85f, 0.15f, 0.15f);
+    diceObj.reflectivity = 0.0f; 
+    diceObj.textureType = TextureType::CUBICAL;
+    diceObj.albedoMapID = TextureManager::loadTexture("../../../Tarea1-30182893-JhonatanHomsany/assets/Textures/dice-texture.png");
+    scene->addObject(diceObj);
+
+    std::vector<Vertex> cylinderVerts = BasicShapesGenerator::generateCylinder(0.5f, 1.0f, 15);
+    Mesh* cylinderMesh = new Mesh(cylinderVerts);
+    SceneObject woodCylinder;
+    woodCylinder.name = "Tronco de madera";
+    woodCylinder.type = MeshType::REVOLUTION_SOLID;
+    woodCylinder.shape = ShapeType::CYLINDER;
+    woodCylinder.meshPointer = cylinderMesh;
+    woodCylinder.position = glm::vec3(0.0f, -6.9f, -5.0f);
+    woodCylinder.rotation = glm::vec3(0.0f);
+    woodCylinder.scale = glm::vec3(2.0f);
+    woodCylinder.color = glm::vec3(1.0f, 1.0f, 1.0f);
+    woodCylinder.reflectivity = 0.0f; 
+    woodCylinder.textureType = TextureType::CYLINDRICAL;
+    woodCylinder.albedoMapID = TextureManager::loadTexture("../../../Tarea1-30182893-JhonatanHomsany/assets/Textures/wood-texture.jpg");
+    scene->addObject(woodCylinder);
+
+    SceneObject bumpMappingSphere;
+    bumpMappingSphere.name = "Pelota de golf";
+    bumpMappingSphere.type = MeshType::REVOLUTION_SOLID;
+    bumpMappingSphere.shape = ShapeType::SPHERE;
+    bumpMappingSphere.meshPointer = new Mesh(sphVerts);
+    bumpMappingSphere.position = glm::vec3(4.5f, -6.9f, -5.0f);
+    bumpMappingSphere.rotation = glm::vec3(0.0f);
+    bumpMappingSphere.scale = glm::vec3(2.0f);
+    bumpMappingSphere.color = glm::vec3(1.0f, 1.0f, 1.0f);
+    bumpMappingSphere.reflectivity = 0.0f; 
+    bumpMappingSphere.textureType = TextureType::SPHERICAL;
+    bumpMappingSphere.bumpMapID = TextureManager::loadTexture("../../../Tarea1-30182893-JhonatanHomsany/assets/Textures/golf-ball-texture.png");
+    scene->addObject(bumpMappingSphere);
 
     if (!lighting->lights.empty()) {
         Light& mainLight = lighting->lights[0];

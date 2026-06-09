@@ -2,6 +2,8 @@
 #include <string>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "tools/TextureManager.h"
+
 enum class MeshType {
     GLTF,
     REVOLUTION_SOLID
@@ -11,7 +13,8 @@ enum class ShapeType{
     SPHERE,
     CONE,
     CYLINDER,
-    PLANE
+    PLANE,
+    CUBE
 };
 struct SceneObject {
     std::string name;
@@ -22,6 +25,10 @@ struct SceneObject {
     float reflectivity = 0.0f;
     float transparency = 0.0f;
     float refractiveIndex = 1.0f;
+    unsigned int normalMapID = 0;
+    unsigned int bumpMapID = 0;
+    unsigned int albedoMapID = 0;
+    TextureType textureType = TextureType::NONE;
     glm::vec3 position = glm::vec3(0.0f);
     glm::vec3 rotation = glm::vec3(0.0f); 
     glm::vec3 scale = glm::vec3(1.0f);

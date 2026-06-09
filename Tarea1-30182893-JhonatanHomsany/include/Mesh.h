@@ -9,9 +9,17 @@
 #include <fstream>
 #include <sstream>
 using namespace std;
+
+struct TexVertex{
+    glm::vec3 position;
+    glm::vec3 normal;
+    glm::vec2 textureCoordinates;
+};
+
 struct Vertex {
     glm::vec3 position;
     glm::vec3 normal;
+    glm::vec2 textureCoordinates;
 };
 class Mesh{
     private:
