@@ -56,6 +56,7 @@ void Scene::draw(const Shader* shader, const Renderer* renderer,
         glUniform1f(glGetUniformLocation(shader->ID, "specularStrength"), mainLight.specularStrength);
         glUniform1f(glGetUniformLocation(shader->ID, "shininess"), mainLight.shininess);
         glUniform1i(glGetUniformLocation(shader->ID, "shadingMode"), static_cast<int>(lighting->activeMode));
+        glUniform1f(glGetUniformLocation(shader->ID, "exposure"), lighting->exposure);
     } else {
         glm::vec3 defaultPos(2.0f, 4.0f, 5.0f);
         glm::vec3 defaultColor(1.0f);
@@ -66,6 +67,7 @@ void Scene::draw(const Shader* shader, const Renderer* renderer,
         glUniform1f(glGetUniformLocation(shader->ID, "specularStrength"), 0.5f);
         glUniform1f(glGetUniformLocation(shader->ID, "shininess"), 32.0f);
         glUniform1i(glGetUniformLocation(shader->ID, "shadingMode"), 3);
+        glUniform1f(glGetUniformLocation(shader->ID, "exposure"), 2.0f);
     }
     for (const auto& obj : objects) {
         if (!obj.meshPointer) continue;
@@ -95,6 +97,34 @@ void Scene::draw(const Shader* shader, const Renderer* renderer,
             glActiveTexture(GL_TEXTURE4);
             glBindTexture(GL_TEXTURE_2D, obj.albedoMapID);
             glUniform1i(glGetUniformLocation(shader->ID, "albedoMap"), 4);
+        }
+        
+        bool hasMetallic = (obj.metallicMapID != 0);
+        bool hasRoughness = (obj.roughnessMapID != 0);
+        bool hasAo = (obj.aoMapID != 0);
+        
+        glUniform1i(glGetUniformLocation(shader->ID, "hasMetallicMap"), hasMetallic);
+        glUniform1i(glGetUniformLocation(shader->ID, "hasRoughnessMap"), hasRoughness);
+        glUniform1i(glGetUniformLocation(shader->ID, "hasAoMap"), hasAo);
+        
+        glUniform1f(glGetUniformLocation(shader->ID, "metallicValue"), obj.metallicValue);
+        glUniform1f(glGetUniformLocation(shader->ID, "roughnessValue"), obj.roughnessValue);
+        glUniform1f(glGetUniformLocation(shader->ID, "aoValue"), obj.aoValue);
+
+        if (hasMetallic) {
+            glActiveTexture(GL_TEXTURE5);
+            glBindTexture(GL_TEXTURE_2D, obj.metallicMapID);
+            glUniform1i(glGetUniformLocation(shader->ID, "metallicMap"), 5);
+        }
+        if (hasRoughness) {
+            glActiveTexture(GL_TEXTURE6);
+            glBindTexture(GL_TEXTURE_2D, obj.roughnessMapID);
+            glUniform1i(glGetUniformLocation(shader->ID, "roughnessMap"), 6);
+        }
+        if (hasAo) {
+            glActiveTexture(GL_TEXTURE7);
+            glBindTexture(GL_TEXTURE_2D, obj.aoMapID);
+            glUniform1i(glGetUniformLocation(shader->ID, "aoMap"), 7);
         }
 
         if (obj.type == MeshType::GLTF) {

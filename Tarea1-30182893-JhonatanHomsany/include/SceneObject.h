@@ -28,6 +28,12 @@ struct SceneObject {
     unsigned int normalMapID = 0;
     unsigned int bumpMapID = 0;
     unsigned int albedoMapID = 0;
+    unsigned int metallicMapID = 0;
+    unsigned int roughnessMapID = 0;
+    unsigned int aoMapID = 0;
+    float metallicValue = 0.0f;
+    float roughnessValue = 0.5f;
+    float aoValue = 1.0f;
     TextureType textureType = TextureType::NONE;
     glm::vec3 position = glm::vec3(0.0f);
     glm::vec3 rotation = glm::vec3(0.0f); 

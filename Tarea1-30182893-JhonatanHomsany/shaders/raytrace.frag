@@ -7,6 +7,7 @@ uniform vec3 camUp;
 uniform vec3 camRight;
 uniform float fov;
 uniform float aspect;
+uniform float exposure;
 uniform sampler2D globalBumpMap;
 struct Sphere {
     vec3 center;
@@ -15,6 +16,9 @@ struct Sphere {
     float reflectivity;
     float transparency;
     float refractiveIndex;
+    float metallic;
+    float roughness;
+    float ao;
     int textureType;
     int hasBumpMap;
     int albedoMapID;
@@ -26,6 +30,9 @@ struct Plane {
     float reflectivity;
     float transparency;
     float refractiveIndex;
+    float metallic;
+    float roughness;
+    float ao;
 };
 struct Triangle {
     vec3 v0;
@@ -36,6 +43,9 @@ struct Triangle {
     float reflectivity;
     float transparency;
     float refractiveIndex;
+    float metallic;
+    float roughness;
+    float ao;
     int textureType;
     int hasBumpMap;
     int albedoMapID;
@@ -49,6 +59,9 @@ struct Cylinder {
     float reflectivity;
     float transparency;
     float refractiveIndex;
+    float metallic;
+    float roughness;
+    float ao;
     int textureType;
     int hasBumpMap;
     int albedoMapID;
@@ -59,6 +72,9 @@ struct Box {
     float reflectivity;
     float transparency;
     float refractiveIndex;
+    float metallic;
+    float roughness;
+    float ao;
     int textureType;
     int hasBumpMap;
     int albedoMapID;
@@ -75,7 +91,7 @@ uniform Sphere spheres[MAX_SPHERES];
 #define MAX_PLANES 10
 uniform int numPlanes;
 uniform Plane planes[MAX_PLANES];
-#define MAX_TRIANGLES 200
+#define MAX_TRIANGLES 60
 uniform int numTriangles;
 uniform Triangle triangles[MAX_TRIANGLES];
 #define MAX_CYLINDERS 10
@@ -102,6 +118,9 @@ struct HitRecord {
     float reflectivity;
     float transparency;
     float refractiveIndex;
+    float metallic;
+    float roughness;
+    float ao;
     vec3 localPos;
     int textureType;
     int hasBumpMap;
@@ -304,7 +323,8 @@ HitRecord findClosestHit(Ray ray) {
     HitRecord rec;
     rec.hit = false;
     rec.t = 99999.0;
-    for (int i = 0; i < numSpheres; i++) {
+    int safeSpheres = min(numSpheres, MAX_SPHERES);
+    for (int i = 0; i < safeSpheres; i++) {
         float t = hitSphere(ray, spheres[i]);
         if (t > 0.0 && t < rec.t) {
             rec.hit = true;
@@ -315,13 +335,17 @@ HitRecord findClosestHit(Ray ray) {
             rec.reflectivity = spheres[i].reflectivity;
             rec.transparency = spheres[i].transparency;
             rec.refractiveIndex = spheres[i].refractiveIndex;
+            rec.metallic = spheres[i].metallic;
+            rec.roughness = spheres[i].roughness;
+            rec.ao = spheres[i].ao;
             rec.localPos = rec.point - spheres[i].center;
             rec.textureType = spheres[i].textureType;
             rec.hasBumpMap = spheres[i].hasBumpMap;
             rec.albedoMapID = spheres[i].albedoMapID;
         }
     }
-    for (int i = 0; i < numPlanes; i++) {
+    int safePlanes = min(numPlanes, MAX_PLANES);
+    for (int i = 0; i < safePlanes; i++) {
         float t = hitPlane(ray, planes[i]);
         if (t > 0.0 && t < rec.t) {
             rec.hit = true;
@@ -332,13 +356,17 @@ HitRecord findClosestHit(Ray ray) {
             rec.reflectivity = planes[i].reflectivity;
             rec.transparency = planes[i].transparency;
             rec.refractiveIndex = planes[i].refractiveIndex;
-            rec.localPos = vec3(0.0);
+            rec.metallic = planes[i].metallic;
+            rec.roughness = planes[i].roughness;
+            rec.ao = planes[i].ao;
+            rec.localPos = rec.point - planes[i].point;
             rec.textureType = 0;
             rec.hasBumpMap = 0;
             rec.albedoMapID = 0;
         }
     }
-    for (int i = 0; i < numTriangles; i++) {
+    int safeTriangles = min(numTriangles, MAX_TRIANGLES);
+    for (int i = 0; i < safeTriangles; i++) {
         vec3 tNormal;
         float u, v;
         float t = hitTriangle(ray, triangles[i], tNormal, u, v);
@@ -351,6 +379,9 @@ HitRecord findClosestHit(Ray ray) {
             rec.reflectivity = triangles[i].reflectivity;
             rec.transparency = triangles[i].transparency;
             rec.refractiveIndex = triangles[i].refractiveIndex;
+            rec.metallic = triangles[i].metallic;
+            rec.roughness = triangles[i].roughness;
+            rec.ao = triangles[i].ao;
             float w = 1.0 - u - v;
             rec.localPos = w * triangles[i].local_v0 + u * triangles[i].local_v1 + v * triangles[i].local_v2;
             rec.textureType = triangles[i].textureType;
@@ -358,7 +389,8 @@ HitRecord findClosestHit(Ray ray) {
             rec.albedoMapID = triangles[i].albedoMapID;
         }
     }
-    for (int i = 0; i < numCylinders; i++) {
+    int safeCylinders = min(numCylinders, MAX_CYLINDERS);
+    for (int i = 0; i < safeCylinders; i++) {
         vec3 tNormal;
         float t = hitCylinder(ray, cylinders[i], tNormal);
         if (t > 0.0 && t < rec.t) {
@@ -370,13 +402,17 @@ HitRecord findClosestHit(Ray ray) {
             rec.reflectivity = cylinders[i].reflectivity;
             rec.transparency = cylinders[i].transparency;
             rec.refractiveIndex = cylinders[i].refractiveIndex;
+            rec.metallic = cylinders[i].metallic;
+            rec.roughness = cylinders[i].roughness;
+            rec.ao = cylinders[i].ao;
             rec.localPos = (cylinders[i].invModel * vec4(rec.point, 1.0)).xyz;
             rec.textureType = cylinders[i].textureType;
             rec.hasBumpMap = cylinders[i].hasBumpMap;
             rec.albedoMapID = cylinders[i].albedoMapID;
         }
     }
-    for (int i = 0; i < numBoxes; i++) {
+    int safeBoxes = min(numBoxes, MAX_BOXES);
+    for (int i = 0; i < safeBoxes; i++) {
         vec3 tNormal;
         float t = hitBox(ray, boxes[i], tNormal);
         if (t > 0.0 && t < rec.t) {
@@ -388,6 +424,9 @@ HitRecord findClosestHit(Ray ray) {
             rec.reflectivity = boxes[i].reflectivity;
             rec.transparency = boxes[i].transparency;
             rec.refractiveIndex = boxes[i].refractiveIndex;
+            rec.metallic = boxes[i].metallic;
+            rec.roughness = boxes[i].roughness;
+            rec.ao = boxes[i].ao;
             rec.localPos = (boxes[i].invModel * vec4(rec.point, 1.0)).xyz;
             rec.textureType = boxes[i].textureType;
             rec.hasBumpMap = boxes[i].hasBumpMap;
@@ -425,9 +464,42 @@ bool inShadowFast(Ray ray, float maxDist) {
     return false;
 }
 
+float DistributionGGX(vec3 N, vec3 H, float roughness) {
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH * NdotH;
+    float num = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = 3.14159265 * denom * denom;
+    return num / max(denom, 0.0001);
+}
+float GeometrySchlickGGX(float NdotV, float roughness) {
+    float r = (roughness + 1.0);
+    float k = (r * r) / 8.0;
+    float num = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+    return num / max(denom, 0.0001);
+}
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+    return ggx1 * ggx2;
+}
+vec3 fresnelSchlickPBR(float cosTheta, vec3 F0) {
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
 vec3 calculateDirectLight(Ray ray, HitRecord rec) {
     vec3 finalColor = vec3(0.0);
     vec3 viewDir = normalize(-ray.dir);
+    
+    vec3 albedo = pow(rec.color, vec3(2.2)); 
+    vec3 F0 = vec3(0.04);
+    F0 = mix(F0, albedo, rec.metallic);
+    
     for (int j = 0; j < numLights; j++) {
         vec3 lightDir = normalize(lights[j].position - rec.point);
         float distToLight = length(lights[j].position - rec.point);
@@ -435,14 +507,32 @@ vec3 calculateDirectLight(Ray ray, HitRecord rec) {
         shadowRay.origin = rec.point + rec.normal * 0.05;
         shadowRay.dir = lightDir;
         bool inShadow = inShadowFast(shadowRay, distToLight);
-        vec3 ambient = lights[j].color * lights[j].ambientIntensity * rec.color;
+        
+        vec3 ambient = lights[j].color * lights[j].ambientIntensity * albedo * rec.ao;
         finalColor += ambient;
+        
         if (!inShadow) {
-            float diff = max(dot(rec.normal, lightDir), 0.0);
-            vec3 reflectedDir = reflect(-lightDir, rec.normal);
-            float spec = pow(max(dot(reflectedDir, viewDir), 0.0), 32.0);
-            finalColor += lights[j].color * diff * lights[j].intensity * rec.color;
-            finalColor += lights[j].color * spec * lights[j].intensity;
+            vec3 halfwayDir = normalize(viewDir + lightDir);
+            float NdotL = max(dot(rec.normal, lightDir), 0.0);
+            float NdotV = max(dot(rec.normal, viewDir), 0.0);
+            
+            float NDF = DistributionGGX(rec.normal, halfwayDir, rec.roughness);   
+            float G   = GeometrySmith(rec.normal, viewDir, lightDir, rec.roughness);      
+            vec3 F    = fresnelSchlickPBR(max(dot(halfwayDir, viewDir), 0.0), F0);
+            
+            vec3 numerator    = NDF * G * F;
+            float denominator = 4.0 * NdotV * NdotL + 0.0001;
+            vec3 specular = numerator / denominator;
+            
+            vec3 kS = F;
+            vec3 kD = vec3(1.0) - kS;
+            kD *= 1.0 - rec.metallic;
+            
+            vec3 diffuse = kD * albedo / 3.14159265;
+            diffuse = max(diffuse, vec3(0.0));
+            specular = max(specular, vec3(0.0));
+            
+            finalColor += (diffuse + specular) * lights[j].color * lights[j].intensity * NdotL;
         }
     }
     return finalColor;
@@ -522,13 +612,36 @@ void main() {
                 currentRay.origin = rec.point - refractNormal * 0.05;
                 throughput *= rec.transparency * (1.0 - F);
             }
-        } else if (rec.reflectivity > 0.0) {
-            currentRay.dir = normalize(reflect(currentRay.dir, rec.normal));
+        } else if (rec.metallic > 0.0 || rec.roughness < 1.0) {
+            vec3 reflectDir = normalize(reflect(currentRay.dir, rec.normal));
+            vec3 jitter = vec3(
+                fract(sin(dot(rec.point.xy, vec2(12.9898, 78.233))) * 43758.5453) * 2.0 - 1.0,
+                fract(sin(dot(rec.point.yz, vec2(12.9898, 78.233))) * 43758.5453) * 2.0 - 1.0,
+                fract(sin(dot(rec.point.zx, vec2(12.9898, 78.233))) * 43758.5453) * 2.0 - 1.0
+            );
+            reflectDir = normalize(reflectDir + jitter * rec.roughness * 0.2);
+            if (dot(reflectDir, rec.normal) < 0.0) reflectDir = reflectDir - 2.0 * dot(reflectDir, rec.normal) * rec.normal;
+            
+            vec3 albedo = pow(rec.color, vec3(2.2));
+            vec3 F0 = mix(vec3(0.04), albedo, rec.metallic);
+            vec3 F = fresnelSchlickPBR(max(dot(rec.normal, normalize(-currentRay.dir)), 0.0), F0);
+            
+            currentRay.dir = reflectDir;
             currentRay.origin = rec.point + rec.normal * 0.05;
-            throughput *= rec.reflectivity;
+            throughput *= F;
         } else {
             break;
         }
     }
+    
+    finalColor *= max(exposure, 1.0);
+    
+    if(isnan(finalColor.x) || isnan(finalColor.y) || isnan(finalColor.z)) {
+        finalColor = vec3(1.0, 0.0, 0.0);
+    }
+    
+    finalColor = finalColor / (finalColor + vec3(1.0));
+    finalColor = pow(finalColor, vec3(1.0/2.2)); 
+    
     FragColor = vec4(finalColor, 1.0);
 }

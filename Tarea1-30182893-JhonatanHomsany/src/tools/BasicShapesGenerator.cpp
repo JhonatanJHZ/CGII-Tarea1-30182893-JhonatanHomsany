@@ -194,6 +194,9 @@ void BasicShapesGenerator::loadDefaultBoxScene(Scene* scene, Lighting* lighting,
     floorObj.scale = glm::vec3(16.0f, 16.0f, 1.0f);
     floorObj.color = glm::vec3(0.40f, 0.40f, 0.40f);
     floorObj.reflectivity = 0.3f;
+    floorObj.metallicValue = 0.0f;
+    floorObj.roughnessValue = 0.0f;
+    floorObj.aoValue = 0.0f;
     scene->addObject(floorObj);
     std::vector<Vertex> ceilVerts = BasicShapesGenerator::generateQuad();
     Mesh* ceilMesh = new Mesh(ceilVerts);
@@ -278,8 +281,11 @@ void BasicShapesGenerator::loadDefaultBoxScene(Scene* scene, Lighting* lighting,
     pyrObj.position = glm::vec3(0.0f, -6.9f, 0.0f);
     pyrObj.rotation = glm::vec3(0.0f, 0.0f, 0.0f);
     pyrObj.scale = glm::vec3(2.0f);
-    pyrObj.color = glm::vec3(0.15f, 0.85f, 0.15f);
+    pyrObj.color = glm::vec3(0.0f, 1.0f, 1.0f);
     pyrObj.reflectivity = 0.8f; 
+    pyrObj.metallicValue = 1.0f;
+    pyrObj.roughnessValue = 0.0f;
+    pyrObj.aoValue = 0.0f;
     scene->addObject(pyrObj);
     std::vector<Vertex> sphVerts = BasicShapesGenerator::generateSphere(0.5f, 30, 30);
     Mesh* sphMesh = new Mesh(sphVerts);
@@ -291,8 +297,11 @@ void BasicShapesGenerator::loadDefaultBoxScene(Scene* scene, Lighting* lighting,
     sphObj.position = glm::vec3(4.5f, -6.9f, 0.0f);
     sphObj.rotation = glm::vec3(0.0f);
     sphObj.scale = glm::vec3(2.0f);
-    sphObj.color = glm::vec3(41.0f / 255.0f, 69.0f / 255.0f, 69.0f / 255.0f);
+    sphObj.color = glm::vec3(1.0f, 1.0f, 1.0f);
     sphObj.reflectivity = 0.8f; 
+    sphObj.metallicValue = 1.0f;
+    sphObj.roughnessValue = 0.0f;
+    sphObj.aoValue = 0.214f;
     scene->addObject(sphObj);
 
     Mesh* diceMesh = new Mesh(cubeVerts);
@@ -338,21 +347,27 @@ void BasicShapesGenerator::loadDefaultBoxScene(Scene* scene, Lighting* lighting,
     bumpMappingSphere.reflectivity = 0.0f; 
     bumpMappingSphere.textureType = TextureType::SPHERICAL;
     bumpMappingSphere.bumpMapID = TextureManager::loadTexture("../../../Tarea1-30182893-JhonatanHomsany/assets/Textures/golf-ball-texture.png");
+    bumpMappingSphere.metallicValue = 0.556f;
+    bumpMappingSphere.roughnessValue = 0.676f;
+    bumpMappingSphere.aoValue = 0.259f;
     scene->addObject(bumpMappingSphere);
 
     if (!lighting->lights.empty()) {
         Light& mainLight = lighting->lights[0];
-        mainLight.position = glm::vec3(0.6f, 5.4f, 4.0f); 
+        mainLight.position = glm::vec3(0.6f, 1.2f, 4.0f); 
         mainLight.color = glm::vec3(1.0f, 1.0f, 1.0f);     
-        mainLight.intensity = 0.56f;                       
-        mainLight.ambientIntensity = 0.50f;                 
+        mainLight.intensity = 0.66f;                       
+        mainLight.ambientIntensity = 0.12f;                 
         mainLight.specularStrength = 0.85f;                 
         mainLight.shininess = 48.0f;                        
     }
     
-    lighting->activeMode = ShadingMode::BLINN_PHONG;
-    camera->setPosition(glm::vec3(-0.20f, -4.70f, 7.20f));
-    camera->setTarget(glm::vec3(-0.40f, -4.95f, 0.00f));
+    lighting->activeMode = ShadingMode::FLAT;
+    lighting->exposure = 4.70f;
+    camera->setPosition(glm::vec3(-0.05f, -5.11f, 6.74f));
+    camera->setTarget(glm::vec3(-0.15f, -5.41f, 5.79f));
     camera->setUp(glm::vec3(0.0f, 1.0f, 0.0f));
-    camera->setFov(85.5f);
+    camera->setFov(80.5f);
+    camera->setRenderMode(RenderMode::RASTERIZATION);
+    camera->setRayBounces(2);
 }

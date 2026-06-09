@@ -6,7 +6,8 @@ enum class ShadingMode {
     FLAT = 0,
     LAMBERT = 1,
     PHONG = 2,
-    BLINN_PHONG = 3
+    BLINN_PHONG = 3,
+    PBR = 4
 };
 struct Light {
     std::string name;
@@ -21,6 +22,7 @@ class Lighting {
 public:
     std::vector<Light> lights;
     ShadingMode activeMode = ShadingMode::FLAT;
+    float exposure = 2.0f; 
     Lighting() {
         Light defaultLight;
         defaultLight.name = "Luz Principal";

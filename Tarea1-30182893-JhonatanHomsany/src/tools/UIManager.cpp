@@ -69,6 +69,10 @@ void UIManager::addPickerUI(Scene* scene, InputPicker* picker){
         ImGui::SliderFloat3("Rotacion del objeto", glm::value_ptr(selectedObject->rotation), -180.0f, 180.0f, "%.1f");
         ImGui::DragFloat3("Escala del objeto", glm::value_ptr(selectedObject->scale), 0.02f, 0.01f, 10.0f, "%.2f");
         ImGui::ColorEdit3("Color del objeto", glm::value_ptr(selectedObject->color));
+        ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "Propiedades PBR");
+        ImGui::SliderFloat("Metallic", &selectedObject->metallicValue, 0.0f, 1.0f);
+        ImGui::SliderFloat("Roughness", &selectedObject->roughnessValue, 0.0f, 1.0f);
+        ImGui::SliderFloat("Ambient Occlusion", &selectedObject->aoValue, 0.0f, 1.0f);
         if (ImGui::Button("Eliminar Objeto", ImVec2(-FLT_MIN, 0))) {
             scene->removeObject(selectedObjectIndex);
             selectedObjectIndex = -1;
@@ -81,7 +85,7 @@ void UIManager::addPickerUI(Scene* scene, InputPicker* picker){
 void UIManager::addIlluminationUI(Lighting* lighting){
     ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "Configuracion de Iluminacion");
     ImGui::Separator();
-    const char* shadingModes[] = { "Flat Shading", "Lambert (Difusa)", "Phong", "Blinn-Phong" };
+    const char* shadingModes[] = { "Flat Shading", "Lambert (Difusa)", "Phong", "Blinn-Phong", "PBR (Físicamente Realista)" };
     int currentMode = static_cast<int>(lighting->activeMode);
     if (ImGui::Combo("Modelo", &currentMode, shadingModes, IM_ARRAYSIZE(shadingModes))) {
         lighting->activeMode = static_cast<ShadingMode>(currentMode);
@@ -93,6 +97,8 @@ void UIManager::addIlluminationUI(Lighting* lighting){
         ImGui::SliderFloat("Intensidad Luz", &mainLight.intensity, 0.0f, 5.0f, "%.2f");
         ImGui::SliderFloat("Intensidad Ambiental", &mainLight.ambientIntensity, 0.0f, 1.0f, "%.2f");
     }
+    ImGui::Separator();
+    ImGui::SliderFloat("Exposicion PBR (Brillo)", &lighting->exposure, 0.1f, 10.0f, "%.2f");
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();

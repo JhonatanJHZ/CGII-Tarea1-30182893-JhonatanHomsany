@@ -191,6 +191,7 @@ void Application::updateAndRender() {
         glUniform1f(glGetUniformLocation(raytraceShader->ID, "fov"), fov);
         glUniform1f(glGetUniformLocation(raytraceShader->ID, "aspect"), aspect);
         glUniform1i(glGetUniformLocation(raytraceShader->ID, "maxBounces"), activeCamera->getRayBounces());
+        glUniform1f(glGetUniformLocation(raytraceShader->ID, "exposure"), lighting->exposure);
         int lightCount = 0;
         for (Light& light : lighting->lights) {
             if(lightCount >= 10) break;
@@ -213,6 +214,9 @@ void Application::updateAndRender() {
                 glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".reflectivity").c_str()), obj.reflectivity);
                 glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".transparency").c_str()), obj.transparency);
                 glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".refractiveIndex").c_str()), obj.refractiveIndex);
+                glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".metallic").c_str()), obj.metallicValue);
+                glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".roughness").c_str()), obj.roughnessValue);
+                glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".ao").c_str()), obj.aoValue);
                 glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".textureType").c_str()), static_cast<int>(obj.textureType));
                 glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".hasBumpMap").c_str()), obj.bumpMapID != 0 ? 1 : 0);
                 glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".albedoMapID").c_str()), obj.albedoMapID);
@@ -238,6 +242,9 @@ void Application::updateAndRender() {
                 glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".reflectivity").c_str()), obj.reflectivity);
                 glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".transparency").c_str()), obj.transparency);
                 glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".refractiveIndex").c_str()), obj.refractiveIndex);
+                glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".metallic").c_str()), obj.metallicValue);
+                glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".roughness").c_str()), obj.roughnessValue);
+                glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".ao").c_str()), obj.aoValue);
                 planeCount++;
             }
         }
@@ -254,6 +261,9 @@ void Application::updateAndRender() {
                 glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".reflectivity").c_str()), obj.reflectivity);
                 glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".transparency").c_str()), obj.transparency);
                 glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".refractiveIndex").c_str()), obj.refractiveIndex);
+                glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".metallic").c_str()), obj.metallicValue);
+                glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".roughness").c_str()), obj.roughnessValue);
+                glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".ao").c_str()), obj.aoValue);
                 glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".textureType").c_str()), static_cast<int>(obj.textureType));
                 glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".hasBumpMap").c_str()), obj.bumpMapID != 0 ? 1 : 0);
                 glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".albedoMapID").c_str()), obj.albedoMapID);
@@ -266,6 +276,9 @@ void Application::updateAndRender() {
                 glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".reflectivity").c_str()), obj.reflectivity);
                 glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".transparency").c_str()), obj.transparency);
                 glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".refractiveIndex").c_str()), obj.refractiveIndex);
+                glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".metallic").c_str()), obj.metallicValue);
+                glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".roughness").c_str()), obj.roughnessValue);
+                glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".ao").c_str()), obj.aoValue);
                 glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".textureType").c_str()), static_cast<int>(obj.textureType));
                 glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".hasBumpMap").c_str()), obj.bumpMapID != 0 ? 1 : 0);
                 glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".albedoMapID").c_str()), obj.albedoMapID);
@@ -289,6 +302,9 @@ void Application::updateAndRender() {
                     glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".reflectivity").c_str()), obj.reflectivity);
                     glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".transparency").c_str()), obj.transparency);
                     glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".refractiveIndex").c_str()), obj.refractiveIndex);
+                    glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".metallic").c_str()), obj.metallicValue);
+                    glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".roughness").c_str()), obj.roughnessValue);
+                    glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".ao").c_str()), obj.aoValue);
                     glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".textureType").c_str()), static_cast<int>(obj.textureType));
                     glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".hasBumpMap").c_str()), obj.bumpMapID != 0 ? 1 : 0);
                     glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".albedoMapID").c_str()), obj.albedoMapID);
