@@ -8,6 +8,9 @@ uniform vec3 camRight;
 uniform float fov;
 uniform float aspect;
 uniform float exposure;
+uniform int shadingMode;
+uniform float shininess;
+uniform float specularStrength;
 uniform sampler2D globalBumpMap;
 struct Sphere {
     vec3 center;
@@ -24,8 +27,7 @@ struct Sphere {
     int albedoMapID;
 };
 struct Plane {
-    vec3 point;
-    vec3 normal;
+    mat4 invModel;
     vec3 color;
     float reflectivity;
     float transparency;
@@ -33,6 +35,9 @@ struct Plane {
     float metallic;
     float roughness;
     float ao;
+    int textureType;
+    int hasBumpMap;
+    int albedoMapID;
 };
 struct Triangle {
     vec3 v0;
@@ -286,11 +291,24 @@ float hitBox(Ray ray, Box box, out vec3 normalOut) {
     normalOut = normalize((normalMatrix * vec4(hitNormal, 0.0)).xyz);
     return tHit / rayScale;
 }
-float hitPlane(Ray ray, Plane plane) {
-    float denom = dot(plane.normal, ray.dir);
-    if (abs(denom) > 1e-6) {
-        float t = dot(plane.point - ray.origin, plane.normal) / denom;
-        if (t > 0.001) return t;
+float hitPlane(Ray ray, Plane plane, out vec3 normalOut) {
+    vec3 O = (plane.invModel * vec4(ray.origin, 1.0)).xyz;
+    vec3 D = normalize((plane.invModel * vec4(ray.dir, 0.0)).xyz);
+    float rayScale = length((plane.invModel * vec4(ray.dir, 0.0)).xyz);
+    
+    if (abs(D.z) > 1e-6) {
+        float t = -O.z / D.z;
+        if (t > 0.001) {
+            vec3 p = O + t * D;
+            if (abs(p.x) <= 0.5 && abs(p.y) <= 0.5) {
+                vec3 localNormal = vec3(0.0, 0.0, 1.0);
+                mat4 normalMatrix = transpose(inverse(inverse(plane.invModel)));
+                vec3 worldNormal = normalize((normalMatrix * vec4(localNormal, 0.0)).xyz);
+                if (dot(ray.dir, worldNormal) > 0.0) worldNormal = -worldNormal;
+                normalOut = worldNormal;
+                return t / rayScale;
+            }
+        }
     }
     return -1.0;
 }
@@ -346,12 +364,13 @@ HitRecord findClosestHit(Ray ray) {
     }
     int safePlanes = min(numPlanes, MAX_PLANES);
     for (int i = 0; i < safePlanes; i++) {
-        float t = hitPlane(ray, planes[i]);
+        vec3 tNormal;
+        float t = hitPlane(ray, planes[i], tNormal);
         if (t > 0.0 && t < rec.t) {
             rec.hit = true;
             rec.t = t;
             rec.point = ray.origin + ray.dir * t;
-            rec.normal = dot(ray.dir, planes[i].normal) < 0.0 ? planes[i].normal : -planes[i].normal;
+            rec.normal = tNormal;
             rec.color = planes[i].color;
             rec.reflectivity = planes[i].reflectivity;
             rec.transparency = planes[i].transparency;
@@ -359,10 +378,10 @@ HitRecord findClosestHit(Ray ray) {
             rec.metallic = planes[i].metallic;
             rec.roughness = planes[i].roughness;
             rec.ao = planes[i].ao;
-            rec.localPos = rec.point - planes[i].point;
-            rec.textureType = 0;
-            rec.hasBumpMap = 0;
-            rec.albedoMapID = 0;
+            rec.localPos = (planes[i].invModel * vec4(rec.point, 1.0)).xyz;
+            rec.textureType = planes[i].textureType;
+            rec.hasBumpMap = planes[i].hasBumpMap;
+            rec.albedoMapID = planes[i].albedoMapID;
         }
     }
     int safeTriangles = min(numTriangles, MAX_TRIANGLES);
@@ -442,7 +461,8 @@ bool inShadowFast(Ray ray, float maxDist) {
         if (t > 0.0 && t < maxDist) return true;
     }
     for (int i = 0; i < numPlanes; i++) {
-        float t = hitPlane(ray, planes[i]);
+        vec3 tNormal;
+        float t = hitPlane(ray, planes[i], tNormal);
         if (t > 0.0 && t < maxDist) return true;
     }
     for (int i = 0; i < numTriangles; i++) {
@@ -516,21 +536,29 @@ vec3 calculateDirectLight(Ray ray, HitRecord rec) {
             float NdotL = max(dot(rec.normal, lightDir), 0.0);
             float NdotV = max(dot(rec.normal, viewDir), 0.0);
             
-            float NDF = DistributionGGX(rec.normal, halfwayDir, rec.roughness);   
-            float G   = GeometrySmith(rec.normal, viewDir, lightDir, rec.roughness);      
-            vec3 F    = fresnelSchlickPBR(max(dot(halfwayDir, viewDir), 0.0), F0);
-            
-            vec3 numerator    = NDF * G * F;
-            float denominator = 4.0 * NdotV * NdotL + 0.0001;
-            vec3 specular = numerator / denominator;
-            
+            vec3 F = fresnelSchlickPBR(max(dot(halfwayDir, viewDir), 0.0), F0);
             vec3 kS = F;
             vec3 kD = vec3(1.0) - kS;
             kD *= 1.0 - rec.metallic;
-            
             vec3 diffuse = kD * albedo / 3.14159265;
-            diffuse = max(diffuse, vec3(0.0));
-            specular = max(specular, vec3(0.0));
+            
+            vec3 specular = vec3(0.0);
+            if (shadingMode == 1) {
+                specular = vec3(0.0);
+            } else if (shadingMode == 2) {
+                vec3 reflectDir = reflect(-lightDir, rec.normal);
+                float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+                specular = F * (spec * specularStrength) / max(NdotL, 0.0001);
+            } else if (shadingMode == 3) {
+                float spec = pow(max(dot(rec.normal, halfwayDir), 0.0), shininess);
+                specular = F * (spec * specularStrength) / max(NdotL, 0.0001);
+            } else {
+                float NDF = DistributionGGX(rec.normal, halfwayDir, rec.roughness);   
+                float G   = GeometrySmith(rec.normal, viewDir, lightDir, rec.roughness);      
+                vec3 numerator    = NDF * G * F;
+                float denominator = 4.0 * NdotV * NdotL + 0.0001;
+                specular = numerator / denominator;
+            }
             
             finalColor += (diffuse + specular) * lights[j].color * lights[j].intensity * NdotL;
         }
@@ -555,8 +583,7 @@ void main() {
         if (bounce >= maxBounces) break;
         HitRecord rec = findClosestHit(currentRay);
         if (!rec.hit) {
-            float tSky = 0.5 * (currentRay.dir.y + 1.0);
-            vec3 skyColor = mix(vec3(1.0, 1.0, 1.0), vec3(0.5, 0.7, 1.0), tSky);
+            vec3 skyColor = vec3(0.0, 0.0, 0.0);
             finalColor += throughput * skyColor;
             break;
         }

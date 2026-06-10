@@ -178,6 +178,11 @@ void Application::updateAndRender() {
             ImGui::End();
         }
     } else if(activeCamera->getRenderMode() == RenderMode::RAY_TRACING) {
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+        glEnable(GL_DEPTH_TEST);
+        scene->draw(flatShader, renderer, view, projection, nullptr, activeCamera->getPosition());
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
         glUseProgram(raytraceShader->ID);
         glm::vec3 camPos = activeCamera->getPosition();
         glm::vec3 front = glm::normalize(activeCamera->getTarget() - camPos);
@@ -192,6 +197,14 @@ void Application::updateAndRender() {
         glUniform1f(glGetUniformLocation(raytraceShader->ID, "aspect"), aspect);
         glUniform1i(glGetUniformLocation(raytraceShader->ID, "maxBounces"), activeCamera->getRayBounces());
         glUniform1f(glGetUniformLocation(raytraceShader->ID, "exposure"), lighting->exposure);
+        glUniform1i(glGetUniformLocation(raytraceShader->ID, "shadingMode"), static_cast<int>(lighting->activeMode));
+        if (!lighting->lights.empty()) {
+            glUniform1f(glGetUniformLocation(raytraceShader->ID, "shininess"), lighting->lights[0].shininess);
+            glUniform1f(glGetUniformLocation(raytraceShader->ID, "specularStrength"), lighting->lights[0].specularStrength);
+        } else {
+            glUniform1f(glGetUniformLocation(raytraceShader->ID, "shininess"), 32.0f);
+            glUniform1f(glGetUniformLocation(raytraceShader->ID, "specularStrength"), 0.5f);
+        }
         int lightCount = 0;
         for (Light& light : lighting->lights) {
             if(lightCount >= 10) break;
@@ -234,10 +247,8 @@ void Application::updateAndRender() {
         for (SceneObject& obj : scene->objects) {
             if (obj.shape == ShapeType::PLANE && planeCount < 10) {
                 std::string base = "planes[" + std::to_string(planeCount) + "]";
-                glm::mat4 model = obj.getModelMatrix();
-                glm::vec3 normal = glm::normalize(glm::vec3(model * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)));
-                glUniform3fv(glGetUniformLocation(raytraceShader->ID, (base + ".point").c_str()), 1, glm::value_ptr(obj.position));
-                glUniform3fv(glGetUniformLocation(raytraceShader->ID, (base + ".normal").c_str()), 1, glm::value_ptr(normal));
+                glm::mat4 invModel = glm::inverse(obj.getModelMatrix());
+                glUniformMatrix4fv(glGetUniformLocation(raytraceShader->ID, (base + ".invModel").c_str()), 1, GL_FALSE, glm::value_ptr(invModel));
                 glUniform3fv(glGetUniformLocation(raytraceShader->ID, (base + ".color").c_str()), 1, glm::value_ptr(obj.color));
                 glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".reflectivity").c_str()), obj.reflectivity);
                 glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".transparency").c_str()), obj.transparency);
@@ -245,6 +256,9 @@ void Application::updateAndRender() {
                 glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".metallic").c_str()), obj.metallicValue);
                 glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".roughness").c_str()), obj.roughnessValue);
                 glUniform1f(glGetUniformLocation(raytraceShader->ID, (base + ".ao").c_str()), obj.aoValue);
+                glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".textureType").c_str()), static_cast<int>(obj.textureType));
+                glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".hasBumpMap").c_str()), obj.bumpMapID != 0 ? 1 : 0);
+                glUniform1i(glGetUniformLocation(raytraceShader->ID, (base + ".albedoMapID").c_str()), obj.albedoMapID);
                 planeCount++;
             }
         }
@@ -326,21 +340,24 @@ void Application::updateAndRender() {
             glUniform1i(glGetUniformLocation(raytraceShader->ID, name.c_str()), 3 + i);
         }
 
+        glDisable(GL_DEPTH_TEST);
         glBindVertexArray(quadVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glBindVertexArray(0);
+        glEnable(GL_DEPTH_TEST);
     }
     ray->hit_object = nullptr;
     ray->hit_t = ray->t_max;
     for(SceneObject &obj : scene->objects){
         ray->intersect(&obj);
     }
-    glDisable(GL_DEPTH_TEST);
     ray->drawRay(view, projection, flatShader);
+    
     if(picker && picker->hit_object){
+        glDisable(GL_DEPTH_TEST);
         drawSelectionBox(picker->hit_object, view, projection, flatShader);
+        glEnable(GL_DEPTH_TEST);
     }
-    glEnable(GL_DEPTH_TEST);
     ImGuiIO& io = ImGui::GetIO();
     static bool wasLeftMousePressed = false;
     bool isLeftMousePressed = glfwGetMouseButton(this->window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;

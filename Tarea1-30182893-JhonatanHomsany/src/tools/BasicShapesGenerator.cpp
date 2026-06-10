@@ -283,9 +283,9 @@ void BasicShapesGenerator::loadDefaultBoxScene(Scene* scene, Lighting* lighting,
     pyrObj.scale = glm::vec3(2.0f);
     pyrObj.color = glm::vec3(0.0f, 1.0f, 1.0f);
     pyrObj.reflectivity = 0.8f; 
-    pyrObj.metallicValue = 1.0f;
+    pyrObj.metallicValue = 0.8f;
     pyrObj.roughnessValue = 0.0f;
-    pyrObj.aoValue = 0.0f;
+    pyrObj.aoValue = 0.2f;
     scene->addObject(pyrObj);
     std::vector<Vertex> sphVerts = BasicShapesGenerator::generateSphere(0.5f, 30, 30);
     Mesh* sphMesh = new Mesh(sphVerts);
@@ -299,9 +299,9 @@ void BasicShapesGenerator::loadDefaultBoxScene(Scene* scene, Lighting* lighting,
     sphObj.scale = glm::vec3(2.0f);
     sphObj.color = glm::vec3(1.0f, 1.0f, 1.0f);
     sphObj.reflectivity = 0.8f; 
-    sphObj.metallicValue = 1.0f;
-    sphObj.roughnessValue = 0.0f;
-    sphObj.aoValue = 0.214f;
+    sphObj.metallicValue = 0.524f;
+    sphObj.roughnessValue = 0.459f;
+    sphObj.aoValue = 0.237f;
     scene->addObject(sphObj);
 
     Mesh* diceMesh = new Mesh(cubeVerts);
@@ -354,7 +354,7 @@ void BasicShapesGenerator::loadDefaultBoxScene(Scene* scene, Lighting* lighting,
 
     if (!lighting->lights.empty()) {
         Light& mainLight = lighting->lights[0];
-        mainLight.position = glm::vec3(0.6f, 1.2f, 4.0f); 
+        mainLight.position = glm::vec3(0.6f, -4.0f, 4.0f); 
         mainLight.color = glm::vec3(1.0f, 1.0f, 1.0f);     
         mainLight.intensity = 0.66f;                       
         mainLight.ambientIntensity = 0.12f;                 

@@ -201,84 +201,64 @@ void main() {
         finalObjectColor = texture(albedoMap, uv).rgb;
     }
 
-    vec3 color = vec3(0.0);
-    vec3 lightDir = normalize(lightPos - FragPos);
+    vec3 albedo = pow(finalObjectColor, vec3(2.2));
+    float metallic = metallicValue;
+    if (hasMetallicMap && textureType != 0) metallic = texture(metallicMap, uv).r;
+    float roughness = roughnessValue;
+    if (hasRoughnessMap && textureType != 0) roughness = texture(roughnessMap, uv).r;
+    float ao = aoValue;
+    if (hasAoMap && textureType != 0) ao = texture(aoMap, uv).r;
+    
     vec3 viewDir = normalize(viewPos - FragPos);
+    vec3 lightDir = normalize(lightPos - FragPos);
+    vec3 halfwayDir = normalize(viewDir + lightDir);
+    
+    float NdotL = max(dot(N, lightDir), 0.0);
+    float NdotV = max(dot(N, viewDir), 0.0);
+    
+    vec3 F0 = vec3(0.04); 
+    F0 = mix(F0, albedo, metallic);
+    vec3 F = fresnelSchlick(max(dot(halfwayDir, viewDir), 0.0), F0);
+    
+    vec3 kS = F;
+    vec3 kD = vec3(1.0) - kS;
+    kD *= 1.0 - metallic;	  
+    vec3 diffuse = kD * albedo / PI;
 
-    if (shadingMode == 4) { 
-        vec3 albedo = pow(finalObjectColor, vec3(2.2));
-        float metallic = metallicValue;
-        if (hasMetallicMap && textureType != 0) metallic = texture(metallicMap, uv).r;
-        float roughness = roughnessValue;
-        if (hasRoughnessMap && textureType != 0) roughness = texture(roughnessMap, uv).r;
-        float ao = aoValue;
-        if (hasAoMap && textureType != 0) ao = texture(aoMap, uv).r;
-        
-        vec3 halfwayDir = normalize(viewDir + lightDir);
-        float NdotL = max(dot(N, lightDir), 0.0);
-        float NdotV = max(dot(N, viewDir), 0.0);
-        
-        vec3 F0 = vec3(0.04); 
-        F0 = mix(F0, albedo, metallic);
-        
+    vec3 specular = vec3(0.0);
+    if (shadingMode == 1) {
+        specular = vec3(0.0);
+    } else if (shadingMode == 2) {
+        vec3 reflectDir = reflect(-lightDir, N);
+        float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+        specular = F * (spec * specularStrength) / max(NdotL, 0.0001);
+    } else if (shadingMode == 3) {
+        float spec = pow(max(dot(N, halfwayDir), 0.0), shininess);
+        specular = F * (spec * specularStrength) / max(NdotL, 0.0001);
+    } else {
         float NDF = DistributionGGX(N, halfwayDir, roughness);   
         float G   = GeometrySmith(N, viewDir, lightDir, roughness);      
-        vec3 F    = fresnelSchlick(max(dot(halfwayDir, viewDir), 0.0), F0);
-        
         vec3 numerator    = NDF * G * F;
         float denominator = 4.0 * NdotV * NdotL + 0.0001; 
-        vec3 specular = numerator / denominator;
-        
-        vec3 kS = F;
-        vec3 kD = vec3(1.0) - kS;
-        kD *= 1.0 - metallic;	  
-        
-        vec3 diffuse = kD * albedo / PI;
-        
-        vec3 Lo = (diffuse + specular) * lightColor * lightIntensity * NdotL;
-        vec3 ambient = ambientIntensity * lightColor * albedo * ao;
-        
-        float shadow = 0.0;
-        if (shadowMode == 2) {
-            if (dot(N, lightDir) <= 0.0) shadow = 1.0;
-            else shadow = ShadowCalculation(FragPosLightSpace, N, lightDir);
-        }
-        
-        color = ambient + (1.0 - shadow) * Lo;
-        if (shadowMode == 2 && showOnlyShadows) {
-            color = vec3(1.0 - shadow);
-        } else {
-            color *= exposure;
-            color = color / (color + vec3(1.0));
-            color = pow(color, vec3(1.0/2.2)); 
-        }
-    } else { 
-        vec3 ambient = ambientIntensity * lightColor * finalObjectColor;
-        float diff = max(dot(N, lightDir), 0.0);
-        vec3 diffuse = diff * lightColor * finalObjectColor * lightIntensity;
-        vec3 specular = vec3(0.0);
-        if (diff > 0.0) {
-            if (shadingMode == 2) {
-                vec3 reflectDir = reflect(-lightDir, N);
-                float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
-                specular = specularStrength * spec * lightColor * lightIntensity;
-            } else if (shadingMode == 3) {
-                vec3 halfwayDir = normalize(lightDir + viewDir);
-                float spec = pow(max(dot(N, halfwayDir), 0.0), shininess);
-                specular = specularStrength * spec * lightColor * lightIntensity;
-            }
-        }
-        
-        float shadow = 0.0;
-        if (shadowMode == 2) {
-            if (dot(N, lightDir) <= 0.0) shadow = 1.0;
-            else shadow = ShadowCalculation(FragPosLightSpace, N, lightDir);
-        }
-        
-        color = ambient + (1.0 - shadow) * (diffuse + specular);
-        if (shadowMode == 2 && showOnlyShadows) {
-            color = vec3(1.0 - shadow);
-        }
+        specular = numerator / denominator;
+    }
+    
+    vec3 Lo = (diffuse + specular) * lightColor * lightIntensity * NdotL;
+    vec3 ambient = ambientIntensity * lightColor * albedo * ao;
+    
+    float shadow = 0.0;
+    if (shadowMode == 2) {
+        if (dot(N, lightDir) <= 0.0) shadow = 1.0;
+        else shadow = ShadowCalculation(FragPosLightSpace, N, lightDir);
+    }
+    
+    vec3 color = ambient + (1.0 - shadow) * Lo;
+    if (shadowMode == 2 && showOnlyShadows) {
+        color = vec3(1.0 - shadow);
+    } else {
+        color *= exposure;
+        color = color / (color + vec3(1.0));
+        color = pow(color, vec3(1.0/2.2)); 
     }
 
     FragColor = vec4(color, 1.0);

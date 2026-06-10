@@ -56,6 +56,25 @@ void UIManager::addObjectGenerationUI(Scene* scene, InputPicker* picker, ShapeTy
     ImGui::SameLine();
     if (ImGui::Button("Esfera", ImVec2(70, 0))) { RevolutionSolidGenerator::loadSpherePreset(currentSegments); activeShapeType = ShapeType::SPHERE; generateRevolutionSolid(scene, picker, activeShapeType); 
     }
+    ImGui::SameLine();
+    if (ImGui::Button("Pirámide", ImVec2(70, 0))) {
+        std::vector<Vertex> vertices = BasicShapesGenerator::generatePyramid(1.0f, 1.0f);
+        Mesh* newMesh = new Mesh(vertices);
+        SceneObject newObj;
+        newObj.name = "Piramide " + std::to_string(scene->objects.size());
+        newObj.type = MeshType::REVOLUTION_SOLID;
+        newObj.meshPointer = newMesh;
+        newObj.position = glm::vec3(0.0f, -4.0f, 0.0f);
+        newObj.rotation = glm::vec3(0.0f);
+        newObj.scale = glm::vec3(2.0f);
+        newObj.color = glm::vec3(0.0f, 1.0f, 1.0f);
+        newObj.reflectivity = 0.8f; 
+        newObj.metallicValue = 0.8f;
+        newObj.roughnessValue = 0.0f;
+        newObj.aoValue = 0.2f;
+        scene->addObject(newObj);
+        selectedObjectIndex = (int)scene->objects.size() - 1;
+    }
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
@@ -85,7 +104,7 @@ void UIManager::addPickerUI(Scene* scene, InputPicker* picker){
 void UIManager::addIlluminationUI(Lighting* lighting){
     ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "Configuracion de Iluminacion");
     ImGui::Separator();
-    const char* shadingModes[] = { "Flat Shading", "Lambert (Difusa)", "Phong", "Blinn-Phong", "PBR (Físicamente Realista)" };
+    const char* shadingModes[] = { "Flat Shading", "Lambert (Difusa)", "Phong", "Blinn-Phong" };
     int currentMode = static_cast<int>(lighting->activeMode);
     if (ImGui::Combo("Modelo", &currentMode, shadingModes, IM_ARRAYSIZE(shadingModes))) {
         lighting->activeMode = static_cast<ShadingMode>(currentMode);
@@ -203,7 +222,7 @@ void UIManager::addCameraUI(std::vector<Camera*>& cameras, int& activeCameraInde
     }
     if (currentMode == 1) {
         int bounces = cameras[activeCameraIndex]->getRayBounces();
-        if (ImGui::SliderInt("Rebotes Maximos", &bounces, 1, 10)) {
+        if (ImGui::SliderInt("Rebotes Maximos", &bounces, 1, 5)) {
             for (Camera* cam : cameras) {
                 cam->setRayBounces(bounces);
             }
