@@ -12,6 +12,7 @@ class Scene;
 class Lighting;
 class Ray;
 class InputPicker;
+class Application;
 class Camera;
 enum class ShapeType;
 class UIManager {
@@ -29,13 +30,13 @@ class UIManager {
         void addPickerUI(Scene* scene, InputPicker* picker);
         void addIlluminationUI(Lighting* lighting);
         void addRaycastUI(Ray* ray);
-        void addFileManagementUI(Scene* scene);
+        void addFileManagementUI(Application* app, Scene* scene);
         void addCameraUI(std::vector<Camera*>& cameras, int& activeCameraIndex);
         void addShadowModesUI();
     public:
         UIManager(GLFWwindow* window);
         ~UIManager();
         void newFrame();
-        void drawInspector(Scene* scene, Lighting* lighting, Ray* ray, InputPicker* picker, std::vector<Camera*>& cameras, int& activeCameraIndex);
+        void drawInspector(Application* app, Scene* scene, Lighting* lighting, Ray* ray, InputPicker* picker, std::vector<Camera*>& cameras, int& activeCameraIndex);
         void render();
 };

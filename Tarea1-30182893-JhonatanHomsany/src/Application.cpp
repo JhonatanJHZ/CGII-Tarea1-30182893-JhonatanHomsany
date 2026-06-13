@@ -15,6 +15,8 @@
 #include <GLFW/glfw3.h>
 #include <algorithm>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 void drawSelectionBox(const SceneObject* obj, const glm::mat4& view, const glm::mat4& projection, Shader* shader) {
     if (!obj || !shader) return;
     glm::vec3 minAABB(-0.5f, -0.5f, -0.5f);
@@ -142,7 +144,7 @@ void Application::updateAndRender() {
     Camera* activeCamera = cameras[activeCameraIndex];
     renderer->clear();
     uiManager->newFrame();
-    uiManager->drawInspector(scene, lighting, ray, picker, cameras, activeCameraIndex);
+    uiManager->drawInspector(this, scene, lighting, ray, picker, cameras, activeCameraIndex);
     int display_w, display_h;
     glfwManager->getFrameBufferSize(&display_w, &display_h);
     display_h = std::max(1, display_h);
@@ -570,4 +572,221 @@ void Application::cleanup() {
         delete c;
     }
     cameras.clear();
+}
+
+bool Application::saveProject(const std::string& filepath) {
+    std::ofstream out(filepath);
+    if (!out.is_open()) return false;
+
+    if (lighting) {
+        out << "[Lighting]\n";
+        out << "activeMode=" << static_cast<int>(lighting->activeMode) << "\n";
+        out << "exposure=" << lighting->exposure << "\n";
+        if (!lighting->lights.empty()) {
+            out << "light_position=" << lighting->lights[0].position.x << " " << lighting->lights[0].position.y << " " << lighting->lights[0].position.z << "\n";
+            out << "light_color=" << lighting->lights[0].color.x << " " << lighting->lights[0].color.y << " " << lighting->lights[0].color.z << "\n";
+            out << "light_intensity=" << lighting->lights[0].intensity << "\n";
+            out << "light_ambient=" << lighting->lights[0].ambientIntensity << "\n";
+        }
+    }
+
+    out << "[Cameras]\n";
+    out << "count=" << cameras.size() << "\n";
+    out << "active=" << activeCameraIndex << "\n";
+    for (size_t i = 0; i < cameras.size(); ++i) {
+        glm::vec3 pos = cameras[i]->getPosition();
+        glm::vec3 tgt = cameras[i]->getTarget();
+        glm::vec3 up = cameras[i]->getUp();
+        out << "cam_" << i << "_pos=" << pos.x << " " << pos.y << " " << pos.z << "\n";
+        out << "cam_" << i << "_tgt=" << tgt.x << " " << tgt.y << " " << tgt.z << "\n";
+        out << "cam_" << i << "_up=" << up.x << " " << up.y << " " << up.z << "\n";
+        out << "cam_" << i << "_mode=" << static_cast<int>(cameras[i]->getRenderMode()) << "\n";
+    }
+
+    if (scene) {
+        out << "[Objects]\n";
+        out << "count=" << scene->objects.size() << "\n";
+        for (size_t i = 0; i < scene->objects.size(); ++i) {
+            const auto& obj = scene->objects[i];
+            out << "obj_" << i << "_name=" << obj.name << "\n";
+            out << "obj_" << i << "_gltfPath=" << obj.gltfPath << "\n";
+            out << "obj_" << i << "_type=" << static_cast<int>(obj.type) << "\n";
+            out << "obj_" << i << "_shape=" << static_cast<int>(obj.shape) << "\n";
+            out << "obj_" << i << "_pos=" << obj.position.x << " " << obj.position.y << " " << obj.position.z << "\n";
+            out << "obj_" << i << "_rot=" << obj.rotation.x << " " << obj.rotation.y << " " << obj.rotation.z << "\n";
+            out << "obj_" << i << "_scale=" << obj.scale.x << " " << obj.scale.y << " " << obj.scale.z << "\n";
+            out << "obj_" << i << "_color=" << obj.color.x << " " << obj.color.y << " " << obj.color.z << "\n";
+            out << "obj_" << i << "_metallic=" << obj.metallicValue << "\n";
+            out << "obj_" << i << "_roughness=" << obj.roughnessValue << "\n";
+            out << "obj_" << i << "_ao=" << obj.aoValue << "\n";
+            out << "obj_" << i << "_textureType=" << static_cast<int>(obj.textureType) << "\n";
+            if(!obj.albedoPath.empty()) out << "obj_" << i << "_albedoPath=" << obj.albedoPath << "\n";
+            if(!obj.normalPath.empty()) out << "obj_" << i << "_normalPath=" << obj.normalPath << "\n";
+            if(!obj.bumpPath.empty()) out << "obj_" << i << "_bumpPath=" << obj.bumpPath << "\n";
+            if(!obj.metallicPath.empty()) out << "obj_" << i << "_metallicPath=" << obj.metallicPath << "\n";
+            if(!obj.roughnessPath.empty()) out << "obj_" << i << "_roughnessPath=" << obj.roughnessPath << "\n";
+            if(!obj.aoPath.empty()) out << "obj_" << i << "_aoPath=" << obj.aoPath << "\n";
+        }
+    }
+
+    out.close();
+    return true;
+}
+
+bool Application::loadProject(const std::string& filepath) {
+    std::ifstream in(filepath);
+    if (!in.is_open()) return false;
+
+    if (scene) {
+        while (!scene->objects.empty()) {
+            scene->removeObject(scene->objects.size() - 1);
+        }
+    }
+
+    for (Camera* c : cameras) delete c;
+    cameras.clear();
+    activeCameraIndex = 0;
+
+    std::string line;
+    std::string currentSection = "";
+    while (std::getline(in, line)) {
+        if (line.empty() || line[0] == '#') continue;
+        if (line[0] == '[') {
+            currentSection = line;
+            continue;
+        }
+
+        size_t eqPos = line.find('=');
+        if (eqPos == std::string::npos) continue;
+
+        std::string key = line.substr(0, eqPos);
+        std::string val = line.substr(eqPos + 1);
+        std::istringstream iss(val);
+
+        if (currentSection == "[Lighting]" && lighting) {
+            if (key == "activeMode") { int m; iss >> m; lighting->activeMode = static_cast<ShadingMode>(m); }
+            else if (key == "exposure") { iss >> lighting->exposure; }
+            else if (key == "light_position" && !lighting->lights.empty()) { iss >> lighting->lights[0].position.x >> lighting->lights[0].position.y >> lighting->lights[0].position.z; }
+            else if (key == "light_color" && !lighting->lights.empty()) { iss >> lighting->lights[0].color.x >> lighting->lights[0].color.y >> lighting->lights[0].color.z; }
+            else if (key == "light_intensity" && !lighting->lights.empty()) { iss >> lighting->lights[0].intensity; }
+            else if (key == "light_ambient" && !lighting->lights.empty()) { iss >> lighting->lights[0].ambientIntensity; }
+        }
+        else if (currentSection == "[Cameras]") {
+            if (key == "count") {
+                int count; iss >> count;
+                for (int i=0; i<count; ++i) cameras.push_back(new Camera(glm::vec3(0.0f, 5.0f, 8.0f)));
+            }
+            else if (key == "active") { iss >> activeCameraIndex; }
+            else if (key.find("cam_") == 0) {
+                int idx;
+                sscanf_s(key.c_str(), "cam_%d_", &idx);
+                if (idx >= 0 && idx < cameras.size()) {
+                    if (key.find("_pos") != std::string::npos) { glm::vec3 pos; iss >> pos.x >> pos.y >> pos.z; cameras[idx]->setPosition(pos); }
+                    else if (key.find("_tgt") != std::string::npos) { glm::vec3 tgt; iss >> tgt.x >> tgt.y >> tgt.z; cameras[idx]->setTarget(tgt); }
+                    else if (key.find("_up") != std::string::npos) { glm::vec3 up; iss >> up.x >> up.y >> up.z; cameras[idx]->setUp(up); }
+                    else if (key.find("_mode") != std::string::npos) { int m; iss >> m; cameras[idx]->setRenderMode(static_cast<RenderMode>(m)); }
+                }
+            }
+        }
+        else if (currentSection == "[Objects]" && scene) {
+            if (key == "count") {
+                int count; iss >> count;
+                scene->objects.resize(count);
+                for(int i = 0; i < count; i++) scene->objects[i].meshPointer = nullptr;
+            }
+            else if (key.find("obj_") == 0) {
+                int idx;
+                sscanf_s(key.c_str(), "obj_%d_", &idx);
+                if (idx >= 0 && idx < scene->objects.size()) {
+                    auto& obj = scene->objects[idx];
+                    if (key.find("_name") != std::string::npos) { obj.name = val; }
+                    else if (key.find("_gltfPath") != std::string::npos) { obj.gltfPath = val; }
+                    else if (key.find("_type") != std::string::npos) { int t; iss >> t; obj.type = static_cast<MeshType>(t); }
+                    else if (key.find("_shape") != std::string::npos) { int s; iss >> s; obj.shape = static_cast<ShapeType>(s); }
+                    else if (key.find("_pos") != std::string::npos) { iss >> obj.position.x >> obj.position.y >> obj.position.z; }
+                    else if (key.find("_rot") != std::string::npos) { iss >> obj.rotation.x >> obj.rotation.y >> obj.rotation.z; }
+                    else if (key.find("_scale") != std::string::npos) { iss >> obj.scale.x >> obj.scale.y >> obj.scale.z; }
+                    else if (key.find("_color") != std::string::npos) { iss >> obj.color.x >> obj.color.y >> obj.color.z; }
+                    else if (key.find("_metallic") != std::string::npos) { iss >> obj.metallicValue; }
+                    else if (key.find("_roughness") != std::string::npos) { iss >> obj.roughnessValue; }
+                    else if (key.find("_ao") != std::string::npos) { iss >> obj.aoValue; }
+                    else if (key.find("_textureType") != std::string::npos) { int tt; iss >> tt; obj.textureType = static_cast<TextureType>(tt); }
+                    else if (key.find("_albedoPath") != std::string::npos) { obj.albedoPath = val; obj.albedoMapID = TextureManager::loadTexture(val); }
+                    else if (key.find("_normalPath") != std::string::npos) { obj.normalPath = val; obj.normalMapID = TextureManager::loadTexture(val); }
+                    else if (key.find("_bumpPath") != std::string::npos) { obj.bumpPath = val; obj.bumpMapID = TextureManager::loadTexture(val); }
+                    else if (key.find("_metallicPath") != std::string::npos) { obj.metallicPath = val; obj.metallicMapID = TextureManager::loadTexture(val); }
+                    else if (key.find("_roughnessPath") != std::string::npos) { obj.roughnessPath = val; obj.roughnessMapID = TextureManager::loadTexture(val); }
+                    else if (key.find("_aoPath") != std::string::npos) { obj.aoPath = val; obj.aoMapID = TextureManager::loadTexture(val); }
+                }
+            }
+        }
+    }
+    
+    if (scene) {
+        for (auto& obj : scene->objects) {
+            if (obj.type == MeshType::GLTF && !obj.gltfPath.empty()) {
+                GLTFManager* gltf = new GLTFManager();
+                if (gltf->loadModel(obj.gltfPath)) {
+                    gltf->setupGL();
+                    obj.meshPointer = gltf;
+                    
+                    glm::vec3 minAABB(FLT_MAX);
+                    glm::vec3 maxAABB(-FLT_MAX);
+                    const auto& vertices = gltf->getVertices();
+                    if (!vertices.empty()) {
+                        for (const auto& v : vertices) {
+                            minAABB = glm::min(minAABB, v.position);
+                            maxAABB = glm::max(maxAABB, v.position);
+                        }
+                        glm::vec3 center = (minAABB + maxAABB) * 0.5f;
+                        obj.pivotOffset = -center;
+                    }
+                } else {
+                    delete gltf;
+                    obj.meshPointer = nullptr;
+                    std::cerr << "Error al recargar modelo GLTF: " << obj.gltfPath << std::endl;
+                }
+            } else if (obj.type == MeshType::REVOLUTION_SOLID) {
+                std::vector<Vertex> verts;
+                switch (obj.shape) {
+                    case ShapeType::CUBE:
+                        verts = BasicShapesGenerator::generateCube(1.0f, false);
+                        break;
+                    case ShapeType::PLANE:
+                        verts = BasicShapesGenerator::generateQuad();
+                        break;
+                    case ShapeType::SPHERE:
+                        verts = BasicShapesGenerator::generateSphere(0.5f, 30, 30);
+                        break;
+                    case ShapeType::CYLINDER:
+                        verts = BasicShapesGenerator::generateCylinder(0.5f, 1.0f, 15);
+                        break;
+                    case ShapeType::PYRAMID:
+                        verts = BasicShapesGenerator::generatePyramid(1.0f, 1.0f);
+                        break;
+                    case ShapeType::CONE:
+                        verts = BasicShapesGenerator::generatePyramid(1.0f, 1.0f);
+                        break;
+                    default:
+                        // If shape is NONE, we might not have the original points, 
+                        // fallback to a cube so it's not invisible.
+                        verts = BasicShapesGenerator::generateCube(1.0f, false);
+                        break;
+                }
+                if (!verts.empty()) {
+                    obj.meshPointer = new Mesh(verts);
+                }
+            }
+        }
+    }
+    
+    if (cameras.empty()) {
+        cameras.push_back(new Camera(glm::vec3(0.0f, 5.0f, 8.0f)));
+        activeCameraIndex = 0;
+    } else {
+        if (activeCameraIndex >= cameras.size()) activeCameraIndex = 0;
+    }
+
+    in.close();
+    return true;
 }

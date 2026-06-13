@@ -1,4 +1,5 @@
 #include "../../include/tools/UIManager.h"
+#include "../../include/Application.h"
 #include "../../include/Scene.h"
 #include "../../include/Mesh.h"
 #include "../../include/Lighting.h"
@@ -63,6 +64,7 @@ void UIManager::addObjectGenerationUI(Scene* scene, InputPicker* picker, ShapeTy
         SceneObject newObj;
         newObj.name = "Piramide " + std::to_string(scene->objects.size());
         newObj.type = MeshType::REVOLUTION_SOLID;
+        newObj.shape = ShapeType::PYRAMID;
         newObj.meshPointer = newMesh;
         newObj.position = glm::vec3(0.0f, -4.0f, 0.0f);
         newObj.rotation = glm::vec3(0.0f);
@@ -140,7 +142,7 @@ void UIManager::addRaycastUI(Ray* ray){
     ImGui::Separator();
     ImGui::Spacing();
 }
-void UIManager::addFileManagementUI(Scene* scene){
+void UIManager::addFileManagementUI(Application* app, Scene* scene){
     ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.8f, 1.0f), "Gestion de Archivos de Escena");
     ImGui::Separator();
     ImGui::InputText("Ruta Importar", importPathBuffer, IM_ARRAYSIZE(importPathBuffer));
@@ -153,6 +155,7 @@ void UIManager::addFileManagementUI(Scene* scene){
             size_t lastSlash = pathStr.find_last_of("/\\");
             std::string fileName = (lastSlash == std::string::npos) ? pathStr : pathStr.substr(lastSlash + 1);
             newObj.name = fileName;
+            newObj.gltfPath = pathStr;
             newObj.type = MeshType::GLTF;
             newObj.meshPointer = gltf;
 
@@ -202,8 +205,8 @@ void UIManager::addFileManagementUI(Scene* scene){
     }
     ImGui::Spacing();
     ImGui::InputText("Ruta Guardar", savePathBuffer, IM_ARRAYSIZE(savePathBuffer));
-    if (ImGui::Button("Guardar Escena (.glb)", ImVec2(-FLT_MIN, 0))) {
-        if (scene->saveScene(savePathBuffer)) {
+    if (ImGui::Button("Guardar Escena (.scene)", ImVec2(-FLT_MIN, 0))) {
+        if (app->saveProject(savePathBuffer)) {
             std::cout << "Escena guardada exitosamente en: " << savePathBuffer << std::endl;
         } else {
             std::cerr << "Error al guardar la escena en: " << savePathBuffer << std::endl;
@@ -211,8 +214,8 @@ void UIManager::addFileManagementUI(Scene* scene){
     }
     ImGui::Spacing();
     ImGui::InputText("Ruta Cargar", loadPathBuffer, IM_ARRAYSIZE(loadPathBuffer));
-    if (ImGui::Button("Cargar Escena (.glb)", ImVec2(-FLT_MIN, 0))) {
-        if (scene->loadScene(loadPathBuffer)) {
+    if (ImGui::Button("Cargar Escena (.scene)", ImVec2(-FLT_MIN, 0))) {
+        if (app->loadProject(loadPathBuffer)) {
             selectedObjectIndex = -1;
             std::cout << "Escena cargada exitosamente desde: " << loadPathBuffer << std::endl;
         } else {
@@ -326,7 +329,7 @@ void UIManager::newFrame() {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 }
-void UIManager::drawInspector(Scene* scene, Lighting* lighting, Ray* ray, InputPicker* picker, std::vector<Camera*>& cameras, int& activeCameraIndex) {
+void UIManager::drawInspector(Application* app, Scene* scene, Lighting* lighting, Ray* ray, InputPicker* picker, std::vector<Camera*>& cameras, int& activeCameraIndex) {
     if (!scene || !lighting) return;
     static ShapeType activeShapeType = ShapeType::CYLINDER;
     float targetWidth = 500.0f;
@@ -341,7 +344,7 @@ void UIManager::drawInspector(Scene* scene, Lighting* lighting, Ray* ray, InputP
     addIlluminationUI(lighting);
     addRaycastUI(ray);
     addShadowModesUI();
-    addFileManagementUI(scene);
+    addFileManagementUI(app, scene);
     if (cameras[activeCameraIndex]) {
         ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.2f, 1.0f), "Escena Especial");
         ImGui::Separator();

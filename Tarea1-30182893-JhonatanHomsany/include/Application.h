@@ -1,5 +1,7 @@
 #pragma once
+#include <glad/glad.h>
 #include <vector>
+#include <string>
 struct GLFWwindow;
 class GLFWManager;
 class UIManager;
@@ -58,6 +60,9 @@ public:
     void cleanup();
     void loadBoxScene();
     Application();
+    bool saveProject(const std::string& filepath);
+    bool loadProject(const std::string& filepath);
+
     ~Application();
     void run();
 private:

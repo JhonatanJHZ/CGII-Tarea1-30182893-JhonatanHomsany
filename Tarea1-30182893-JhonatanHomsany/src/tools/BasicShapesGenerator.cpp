@@ -277,6 +277,7 @@ void BasicShapesGenerator::loadDefaultBoxScene(Scene* scene, Lighting* lighting,
     SceneObject pyrObj;
     pyrObj.name = "Piramide";
     pyrObj.type = MeshType::REVOLUTION_SOLID;
+    pyrObj.shape = ShapeType::PYRAMID;
     pyrObj.meshPointer = pyrMesh;
     pyrObj.position = glm::vec3(0.0f, -6.9f, 0.0f);
     pyrObj.rotation = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -316,7 +317,8 @@ void BasicShapesGenerator::loadDefaultBoxScene(Scene* scene, Lighting* lighting,
     diceObj.color = glm::vec3(0.85f, 0.15f, 0.15f);
     diceObj.reflectivity = 0.0f; 
     diceObj.textureType = TextureType::CUBICAL;
-    diceObj.albedoMapID = TextureManager::loadTexture("../../../Tarea1-30182893-JhonatanHomsany/assets/Textures/dice-texture.png");
+    diceObj.albedoPath = "../../../Tarea1-30182893-JhonatanHomsany/assets/Textures/dice-texture.png";
+    diceObj.albedoMapID = TextureManager::loadTexture(diceObj.albedoPath);
     scene->addObject(diceObj);
 
     std::vector<Vertex> cylinderVerts = BasicShapesGenerator::generateCylinder(0.5f, 1.0f, 15);
@@ -332,7 +334,8 @@ void BasicShapesGenerator::loadDefaultBoxScene(Scene* scene, Lighting* lighting,
     woodCylinder.color = glm::vec3(1.0f, 1.0f, 1.0f);
     woodCylinder.reflectivity = 0.0f; 
     woodCylinder.textureType = TextureType::CYLINDRICAL;
-    woodCylinder.albedoMapID = TextureManager::loadTexture("../../../Tarea1-30182893-JhonatanHomsany/assets/Textures/wood-texture.jpg");
+    woodCylinder.albedoPath = "../../../Tarea1-30182893-JhonatanHomsany/assets/Textures/wood-texture.jpg";
+    woodCylinder.albedoMapID = TextureManager::loadTexture(woodCylinder.albedoPath);
     scene->addObject(woodCylinder);
 
     SceneObject bumpMappingSphere;
@@ -346,7 +349,8 @@ void BasicShapesGenerator::loadDefaultBoxScene(Scene* scene, Lighting* lighting,
     bumpMappingSphere.color = glm::vec3(1.0f, 1.0f, 1.0f);
     bumpMappingSphere.reflectivity = 0.0f; 
     bumpMappingSphere.textureType = TextureType::SPHERICAL;
-    bumpMappingSphere.bumpMapID = TextureManager::loadTexture("../../../Tarea1-30182893-JhonatanHomsany/assets/Textures/golf-ball-texture.png");
+    bumpMappingSphere.bumpPath = "../../../Tarea1-30182893-JhonatanHomsany/assets/Textures/golf-ball-texture.png";
+    bumpMappingSphere.bumpMapID = TextureManager::loadTexture(bumpMappingSphere.bumpPath);
     bumpMappingSphere.metallicValue = 0.556f;
     bumpMappingSphere.roughnessValue = 0.676f;
     bumpMappingSphere.aoValue = 0.259f;

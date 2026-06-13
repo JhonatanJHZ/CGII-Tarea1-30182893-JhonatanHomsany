@@ -14,12 +14,21 @@ enum class ShapeType{
     CONE,
     CYLINDER,
     PLANE,
-    CUBE
+    CUBE,
+    PYRAMID
 };
 struct SceneObject {
     std::string name;
+    std::string gltfPath = "";
     MeshType type;
     void* meshPointer;
+    
+    std::string albedoPath = "";
+    std::string normalPath = "";
+    std::string bumpPath = "";
+    std::string metallicPath = "";
+    std::string roughnessPath = "";
+    std::string aoPath = "";
     ShapeType shape = ShapeType::NONE;
     float localRadius = 1.0f;
     float reflectivity = 0.0f;
