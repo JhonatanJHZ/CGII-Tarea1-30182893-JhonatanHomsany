@@ -20,7 +20,7 @@ class UIManager {
         std::vector<ProfileSegment> currentSegments;
         int radialSegments = 32;
         int samplePointsPerSegment = 20;
-        char importPathBuffer[256] = "../../../Tarea1-30182893-JhonatanHomsany/assets/Link_ Zelda Tear of the Kingdom.glb";
+        char importPathBuffer[256] = "../../../Tarea1-30182893-JhonatanHomsany/assets/jarron.glb";
         char savePathBuffer[256] = "../../../Tarea1-30182893-JhonatanHomsany/assets/escena_guardada.glb";
         char loadPathBuffer[256] = "../../../Tarea1-30182893-JhonatanHomsany/assets/escena_guardada.glb";
         void addInstructionsUI();

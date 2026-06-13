@@ -179,12 +179,12 @@ void main() {
         uv = calculateUV(LocalPos, textureType);
     }
     
-    if (hasNormalMap && textureType != 0) {
+    if (hasNormalMap) {
         mat3 TBN = calculateTBN(N, FragPos, uv);
         vec3 normalFromMap = texture(normalMap, uv).rgb;
         normalFromMap = normalFromMap * 2.0 - 1.0;
         N = normalize(TBN * normalFromMap);
-    } else if (hasBumpMap && textureType != 0) {
+    } else if (hasBumpMap) {
         float texelSize = 1.0 / textureSize(bumpMap, 0).x;
         float hL = texture(bumpMap, uv + vec2(-texelSize, 0.0)).r;
         float hR = texture(bumpMap, uv + vec2(texelSize, 0.0)).r;
@@ -197,17 +197,17 @@ void main() {
     }
 
     vec3 finalObjectColor = objectColor;
-    if (hasAlbedoMap && textureType != 0) {
+    if (hasAlbedoMap) {
         finalObjectColor = texture(albedoMap, uv).rgb;
     }
 
     vec3 albedo = pow(finalObjectColor, vec3(2.2));
     float metallic = metallicValue;
-    if (hasMetallicMap && textureType != 0) metallic = texture(metallicMap, uv).r;
+    if (hasMetallicMap) metallic = texture(metallicMap, uv).r;
     float roughness = roughnessValue;
-    if (hasRoughnessMap && textureType != 0) roughness = texture(roughnessMap, uv).r;
+    if (hasRoughnessMap) roughness = texture(roughnessMap, uv).r;
     float ao = aoValue;
-    if (hasAoMap && textureType != 0) ao = texture(aoMap, uv).r;
+    if (hasAoMap) ao = texture(aoMap, uv).r;
     
     vec3 viewDir = normalize(viewPos - FragPos);
     vec3 lightDir = normalize(lightPos - FragPos);

@@ -1,4 +1,4 @@
-#version 330 core
+#version 430 core
 out vec4 FragColor;
 in vec2 TexCoords;
 uniform vec3 camPos;
@@ -40,11 +40,11 @@ struct Plane {
     int albedoMapID;
 };
 struct Triangle {
-    vec3 v0;
-    vec3 v1;
-    vec3 v2;
-    vec3 normal;
-    vec3 color;
+    vec4 v0;
+    vec4 v1;
+    vec4 v2;
+    vec4 normal;
+    vec4 color;
     float reflectivity;
     float transparency;
     float refractiveIndex;
@@ -54,9 +54,16 @@ struct Triangle {
     int textureType;
     int hasBumpMap;
     int albedoMapID;
-    vec3 local_v0;
-    vec3 local_v1;
-    vec3 local_v2;
+    float pad0;
+    float pad1;
+    float pad2;
+    vec4 local_v0;
+    vec4 local_v1;
+    vec4 local_v2;
+    vec2 uv0;
+    vec2 uv1;
+    vec2 uv2;
+    vec2 pad3;
 };
 struct Cylinder {
     mat4 invModel;
@@ -96,9 +103,20 @@ uniform Sphere spheres[MAX_SPHERES];
 #define MAX_PLANES 10
 uniform int numPlanes;
 uniform Plane planes[MAX_PLANES];
-#define MAX_TRIANGLES 60
+layout(std430, binding = 0) buffer TriangleBuffer {
+    Triangle triangles[];
+};
 uniform int numTriangles;
-uniform Triangle triangles[MAX_TRIANGLES];
+
+struct MeshGroup {
+    vec3 minAABB;
+    int startIndex;
+    vec3 maxAABB;
+    int count;
+};
+#define MAX_MESH_GROUPS 10
+uniform int numMeshGroups;
+uniform MeshGroup meshGroups[MAX_MESH_GROUPS];
 #define MAX_CYLINDERS 10
 uniform int numCylinders;
 uniform Cylinder cylinders[MAX_CYLINDERS];
@@ -130,6 +148,7 @@ struct HitRecord {
     int textureType;
     int hasBumpMap;
     int albedoMapID;
+    vec2 uv;
 };
 
 uniform sampler2D albedo1;
@@ -184,12 +203,14 @@ vec2 getUV(vec3 localPos, int textureType) {
         vec3 p = normalize(localPos);
         uv.x = atan(p.z, p.x) / (2.0 * 3.14159265) + 0.5;
         uv.y = asin(p.y) / 3.14159265 + 0.5;
-        uv *= 6.0;
-    } else if (textureType == 3) { 
-        vec3 p = normalize(vec3(localPos.x, 0.0, localPos.z));
+    } else if (textureType == 3) {
+        vec3 p = localPos;
         uv.x = atan(p.z, p.x) / (2.0 * 3.14159265) + 0.5;
-        uv.y = localPos.y + 0.5;
-        uv *= 6.0;
+        uv.y = p.y + 0.5;
+    } else if (textureType == 4) {
+        uv = localPos.xz + 0.5;
+    } else if (textureType == 5) {
+        uv = localPos.xy;
     }
     return uv;
 }
@@ -312,27 +333,40 @@ float hitPlane(Ray ray, Plane plane, out vec3 normalOut) {
     }
     return -1.0;
 }
-float hitTriangle(Ray ray, Triangle tri, out vec3 normalOut, out float uOut, out float vOut) {
-    const float EPSILON = 1e-6;
-    vec3 edge1 = tri.v1 - tri.v0;
-    vec3 edge2 = tri.v2 - tri.v0;
-    vec3 h = cross(ray.dir, edge2);
-    float a = dot(edge1, h);
-    if (a > -EPSILON && a < EPSILON) return -1.0;
-    if (tri.transparency == 0.0 && a < 0.0) return -1.0;
+bool hitAABB(Ray ray, vec3 boxMin, vec3 boxMax) {
+    vec3 invDir = 1.0 / ray.dir;
+    vec3 t0 = (boxMin - ray.origin) * invDir;
+    vec3 t1 = (boxMax - ray.origin) * invDir;
+    vec3 tmin = min(t0, t1);
+    vec3 tmax = max(t0, t1);
+    float tNear = max(max(tmin.x, tmin.y), tmin.z);
+    float tFar = min(min(tmax.x, tmax.y), tmax.z);
+    return tNear <= tFar && tFar > 0.0;
+}
+
+float hitTriangle(Ray ray, Triangle tri, out vec3 normal, out vec3 hitPoint, out vec3 localPos, out vec2 hitUV) {
+    vec3 v0 = tri.v0.xyz;
+    vec3 v1 = tri.v1.xyz;
+    vec3 v2 = tri.v2.xyz;
+    vec3 e1 = v1 - v0;
+    vec3 e2 = v2 - v0;
+    vec3 h = cross(ray.dir, e2);
+    float a = dot(e1, h);
+    if (a > -0.00001 && a < 0.00001) return -1.0;
     float f = 1.0 / a;
-    vec3 s = ray.origin - tri.v0;
+    vec3 s = ray.origin - v0;
     float u = f * dot(s, h);
     if (u < 0.0 || u > 1.0) return -1.0;
-    vec3 q = cross(s, edge1);
+    vec3 q = cross(s, e1);
     float v = f * dot(ray.dir, q);
     if (v < 0.0 || u + v > 1.0) return -1.0;
-    float t = f * dot(edge2, q);
+    float t = f * dot(e2, q);
     if (t > 0.001) {
-        normalOut = normalize(cross(edge1, edge2));
-        if(dot(normalOut, ray.dir) > 0.0) normalOut = -normalOut;
-        uOut = u;
-        vOut = v;
+        normal = normalize(tri.normal.xyz);
+        hitPoint = ray.origin + ray.dir * t;
+        float w = 1.0 - u - v;
+        localPos = (tri.local_v0.xyz * w) + (tri.local_v1.xyz * u) + (tri.local_v2.xyz * v);
+        hitUV = (tri.uv0 * w) + (tri.uv1 * u) + (tri.uv2 * v);
         return t;
     }
     return -1.0;
@@ -384,28 +418,32 @@ HitRecord findClosestHit(Ray ray) {
             rec.albedoMapID = planes[i].albedoMapID;
         }
     }
-    int safeTriangles = min(numTriangles, MAX_TRIANGLES);
-    for (int i = 0; i < safeTriangles; i++) {
-        vec3 tNormal;
-        float u, v;
-        float t = hitTriangle(ray, triangles[i], tNormal, u, v);
-        if (t > 0.0 && t < rec.t) {
-            rec.hit = true;
-            rec.t = t;
-            rec.point = ray.origin + ray.dir * t;
-            rec.normal = tNormal;
-            rec.color = triangles[i].color;
-            rec.reflectivity = triangles[i].reflectivity;
-            rec.transparency = triangles[i].transparency;
-            rec.refractiveIndex = triangles[i].refractiveIndex;
-            rec.metallic = triangles[i].metallic;
-            rec.roughness = triangles[i].roughness;
-            rec.ao = triangles[i].ao;
-            float w = 1.0 - u - v;
-            rec.localPos = w * triangles[i].local_v0 + u * triangles[i].local_v1 + v * triangles[i].local_v2;
-            rec.textureType = triangles[i].textureType;
-            rec.hasBumpMap = triangles[i].hasBumpMap;
-            rec.albedoMapID = triangles[i].albedoMapID;
+    for (int g = 0; g < numMeshGroups; g++) {
+        if (!hitAABB(ray, meshGroups[g].minAABB, meshGroups[g].maxAABB)) {
+            continue;
+        }
+        for (int i = meshGroups[g].startIndex; i < meshGroups[g].startIndex + meshGroups[g].count; i++) {
+            vec3 normal, hitPoint, localPos;
+            vec2 hitUV;
+            float t = hitTriangle(ray, triangles[i], normal, hitPoint, localPos, hitUV);
+            if (t > 0.0 && t < rec.t) {
+                rec.hit = true;
+                rec.t = t;
+                rec.point = hitPoint;
+                rec.normal = normal;
+                rec.color = triangles[i].color.rgb;
+                rec.reflectivity = triangles[i].reflectivity;
+                rec.transparency = triangles[i].transparency;
+                rec.refractiveIndex = triangles[i].refractiveIndex;
+                rec.metallic = triangles[i].metallic;
+                rec.roughness = triangles[i].roughness;
+                rec.ao = triangles[i].ao;
+                rec.localPos = localPos;
+                rec.textureType = triangles[i].textureType;
+                rec.hasBumpMap = triangles[i].hasBumpMap;
+                rec.albedoMapID = triangles[i].albedoMapID;
+                rec.uv = hitUV;
+            }
         }
     }
     int safeCylinders = min(numCylinders, MAX_CYLINDERS);
@@ -465,11 +503,16 @@ bool inShadowFast(Ray ray, float maxDist) {
         float t = hitPlane(ray, planes[i], tNormal);
         if (t > 0.0 && t < maxDist) return true;
     }
-    for (int i = 0; i < numTriangles; i++) {
-        vec3 tNormal;
-        float u, v;
-        float t = hitTriangle(ray, triangles[i], tNormal, u, v);
-        if (t > 0.0 && t < maxDist) return true;
+    for (int g = 0; g < numMeshGroups; g++) {
+        if (!hitAABB(ray, meshGroups[g].minAABB, meshGroups[g].maxAABB)) {
+            continue;
+        }
+        for (int i = meshGroups[g].startIndex; i < meshGroups[g].startIndex + meshGroups[g].count; i++) {
+            vec3 normal, hitPoint, localPos;
+            vec2 hitUV;
+            float t = hitTriangle(ray, triangles[i], normal, hitPoint, localPos, hitUV);
+            if (t > 0.001 && t < maxDist) return true;
+        }
     }
     for (int i = 0; i < numCylinders; i++) {
         vec3 tNormal;
@@ -588,8 +631,8 @@ void main() {
             break;
         }
 
-        if (rec.textureType != 0 && rec.albedoMapID != 0) {
-            vec2 uv = getUV(rec.localPos, rec.textureType);
+        if (rec.textureType != 0) {
+            vec2 uv = (rec.textureType == 5) ? rec.uv : getUV(rec.localPos, rec.textureType);
             vec3 albedo = getAlbedoColor(rec.albedoMapID, uv);
             rec.color = albedo;
         }

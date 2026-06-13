@@ -155,10 +155,43 @@ void UIManager::addFileManagementUI(Scene* scene){
             newObj.name = fileName;
             newObj.type = MeshType::GLTF;
             newObj.meshPointer = gltf;
-            newObj.position = glm::vec3(0.0f);
-            newObj.rotation = glm::vec3(0.0f);
-            newObj.scale = glm::vec3(1.0f);
-            newObj.color = glm::vec3(0.8f);
+
+            glm::vec3 minAABB(FLT_MAX);
+            glm::vec3 maxAABB(-FLT_MAX);
+            const auto& vertices = gltf->getVertices();
+            if (!vertices.empty()) {
+                for (const auto& v : vertices) {
+                    minAABB = glm::min(minAABB, v.position);
+                    maxAABB = glm::max(maxAABB, v.position);
+                }
+                glm::vec3 center = (minAABB + maxAABB) * 0.5f;
+                glm::vec3 size = maxAABB - minAABB;
+                float maxAxis = std::max(size.x, std::max(size.y, size.z));
+                float scaleFactor = (maxAxis > 0.0f) ? (2.0f / maxAxis) : 1.0f;
+                
+                newObj.scale = glm::vec3(scaleFactor);
+                newObj.pivotOffset = -center;
+                newObj.position = glm::vec3(0.0f);
+            } else {
+                newObj.position = glm::vec3(0.0f);
+                newObj.scale = glm::vec3(1.0f);
+                newObj.pivotOffset = glm::vec3(0.0f);
+            }
+            if (fileName == "jarron.glb") {
+                newObj.position = glm::vec3(-2.15f, -7.25f, 0.00f);
+                newObj.rotation = glm::vec3(-91.1f, 0.0f, 0.0f);
+                newObj.scale = glm::vec3(0.06f, 0.06f, 0.06f);
+                newObj.color = glm::vec3(1.0f, 1.0f, 1.0f); 
+                newObj.metallicValue = 0.0f;
+                newObj.roughnessValue = 0.5f;
+                newObj.aoValue = 1.0f;
+            } else {
+                newObj.rotation = glm::vec3(0.0f);
+                newObj.color = glm::vec3(1.0f, 1.0f, 1.0f); 
+                newObj.metallicValue = 0.0f;
+                newObj.roughnessValue = 0.5f;
+                newObj.aoValue = 1.0f;
+            }
             scene->addObject(newObj);
             selectedObjectIndex = (int)scene->objects.size() - 1;
             std::cout << "Modelo importado con exito: " << importPathBuffer << std::endl;

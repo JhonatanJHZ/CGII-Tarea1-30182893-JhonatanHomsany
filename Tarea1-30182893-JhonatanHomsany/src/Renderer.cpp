@@ -16,7 +16,7 @@ void Renderer::render(const GLTFManager* gltf, const Shader* shader, const glm::
     glUniformMatrix4fv(glGetUniformLocation(shader->ID, "model"), 1, GL_FALSE, glm::value_ptr(model));
     glUniformMatrix4fv(glGetUniformLocation(shader->ID, "view"), 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(glGetUniformLocation(shader->ID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-    gltf->draw();
+    gltf->draw(shader);
 }
 void Renderer::render(const Mesh* mesh, const Shader* shader, const glm::mat4& model, const glm::mat4& view, const glm::mat4& projection) const {
     if (!mesh || !shader) return;
