@@ -15,6 +15,7 @@ bool ShadowManager::usePCF = true;
 int ShadowManager::pcfKernelRadius = 1;
 bool ShadowManager::showOnlyShadows = false;
 bool ShadowManager::showDepthMap = false;
+bool ShadowManager::showShadowVolumes = false;
 unsigned int ShadowManager::depthMapFBO = 0;
 unsigned int ShadowManager::depthMapTexture = 0;
 #include <iostream>
@@ -227,4 +228,25 @@ void ShadowManager::renderShadowVolumes(const Scene* scene, const Shader* flatSh
     glDisable(GL_BLEND);
     glDisable(GL_STENCIL_TEST);
     glDepthFunc(GL_LESS);
+
+    if (showShadowVolumes) {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glUseProgram(volumeShader->ID);
+        for (const auto& obj : scene->objects) {
+            if (obj.name == "Piso" || obj.name == "Techo" || obj.name == "Pared Izquierda" || 
+                obj.name == "Pared Derecha" || obj.name == "Pared del Frente" || obj.name == "Pared Trasera") {
+                continue; 
+            }
+            glm::mat4 modelMatrix = obj.getModelMatrix();
+            if (obj.type == MeshType::GLTF) {
+                renderer->render(static_cast<const GLTFManager*>(obj.meshPointer), volumeShader, modelMatrix, view, projection);
+            } else if (obj.type == MeshType::REVOLUTION_SOLID) {
+                renderer->render(static_cast<const Mesh*>(obj.meshPointer), volumeShader, modelMatrix, view, projection);
+            }
+        }
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glDisable(GL_BLEND);
+    }
 }

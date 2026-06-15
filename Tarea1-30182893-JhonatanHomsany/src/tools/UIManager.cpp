@@ -127,7 +127,7 @@ void UIManager::addIlluminationUI(Lighting* lighting){
     ImGui::Spacing();
 }
 void UIManager::addRaycastUI(Ray* ray){
-    ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), "Ray Tracing");
+    ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), "Ray Casting");
     ImGui::Separator();
     if(ray){
         ImGui::DragFloat3("Origin", glm::value_ptr(ray->origin), 0.05f, -15.0f, 15.0f, "%.2f");
@@ -305,6 +305,10 @@ void UIManager::addShadowModesUI(){
     int currentShadowMode = static_cast<int>(ShadowManager::mode);
     if (ImGui::Combo("Modo de Sombras", &currentShadowMode, shadowModes, IM_ARRAYSIZE(shadowModes))) {
         ShadowManager::mode = static_cast<ShadowMode>(currentShadowMode);
+    }
+    if (ShadowManager::mode == ShadowMode::SHADOW_VOLUMES) {
+        ImGui::Separator();
+        ImGui::Checkbox("Ver Mallado de Volumenes de Sombras (Wireframe)", &ShadowManager::showShadowVolumes);
     }
     if (ShadowManager::mode == ShadowMode::SHADOW_MAPPING) {
         ImGui::Separator();

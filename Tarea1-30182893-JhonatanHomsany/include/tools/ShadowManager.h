@@ -23,6 +23,7 @@ public:
     static int pcfKernelRadius;
     static bool showOnlyShadows;
     static bool showDepthMap;
+    static bool showShadowVolumes;
     static unsigned int depthMapFBO;
     static unsigned int depthMapTexture;
     static const unsigned int SHADOW_WIDTH = 2048;
