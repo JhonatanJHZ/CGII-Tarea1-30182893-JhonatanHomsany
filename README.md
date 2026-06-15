@@ -32,6 +32,8 @@ Adicionalmente, la configuración de ejecución se ha establecido en modo $Relea
 
 Una vez establecidas las configuraciones, basta con utilizar el depurador local de Windows en Visual Studio 2022 para ejecutar el proyecto.
 
+Este proyecto también se encuentra disponible en la plataforma GitHub a través del siguiente enlace: https://github.com/JhonatanJHZ/CGII-Tarea1-30182893-JhonatanHomsany
+
 ## Librerías utilizadas.
 
 Ante la ausencia de un manejador de paquetes para programas hechos en C++, el proyecto fue realizado utilizando la configuración base de CMake definida por Visual Studio. Luego, a partir de CMake, se instalaron las siguientes librerías necesarias para la realización del proyecto:
