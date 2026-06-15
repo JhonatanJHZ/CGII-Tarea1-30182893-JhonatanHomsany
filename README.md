@@ -74,7 +74,7 @@ En la GUI, el usuario cuenta con los siguientes controles:
 
 - Generación de objetos (pirámides, esferas, cubos y cilíndros).
 
-- Agregar nuevas cámaras en la escena.
+- Agregar nuevas cámaras en la escena. Es importante mencionar que se otorgó libertad de movimiento a las cámaras generadas para que el usuario pueda ubicarlas en el lugar de su preferencia en caso de que quiera mantenerlas como cámaras de seguridad. Las cámaras guardan los atributos que tenían la última vez que fueron utilizadas.
 
 - Cambiar el modo de renderizado de las cámaras.
 
@@ -114,10 +114,14 @@ Finalmente, al implementar el PBR ocurre que, en el modo raytracing, se deben as
 
 ## Funcionamiento del programa.
 
+<img width="1918" height="1137" alt="image" src="https://github.com/user-attachments/assets/3cd984c5-daf7-461f-9fd7-9157abf37146" />
+
 <p align="center">
   <i><b>Fig. 1.</b> Escena generada manualmente y renderizada con rasterización.</i>
 </p>
 
+<img width="1918" height="1133" alt="image" src="https://github.com/user-attachments/assets/bfafc5d8-622d-4770-b5c1-8ca50d3bd668" />
+
 <p align="center">
-  <i><b>Fig. 2.</b> Escena generada manualmente y renderizada con raytracing.</i>
+  <i><b>Fig. 2.</b> Escena generada manualmente y renderizada con Ray Tracing.</i>
 </p>
