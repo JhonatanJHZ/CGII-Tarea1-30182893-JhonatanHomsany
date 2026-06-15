@@ -18,6 +18,7 @@ GLTFManager::~GLTFManager() {
 }
 
 bool GLTFManager::loadModel(const std::string& filename) {
+    modelPath = filename;
     tinygltf3::ErrorStack errors;
     tg3_error_code err = tinygltf3::parse_file(model, errors, filename.c_str());
     if (err != TG3_OK) {
@@ -59,6 +60,11 @@ void GLTFManager::setupGL() {
                 width = img.width;
                 height = img.height;
                 channels = img.component;
+            } else if (img.uri.len > 0) {
+                std::string uri(img.uri.data, img.uri.len);
+                std::string basePath = modelPath.substr(0, modelPath.find_last_of("/\\") + 1);
+                std::string texPath = basePath + uri;
+                pixels = stbi_load(texPath.c_str(), &width, &height, &channels, 0);
             }
 
             if (!pixels) {
@@ -207,6 +213,10 @@ void GLTFManager::setupGL() {
                     } else v.color = glm::vec4(1.0f);
                 } else v.color = glm::vec4(1.0f);
 
+                if (prim.material >= 0 && prim.material < (int)materials.size()) {
+                    v.color *= materials[prim.material].baseColorFactor;
+                }
+
                 temp_vertices[i] = v;
             }
 
@@ -286,6 +296,7 @@ void GLTFManager::draw(const class Shader* shader) const {
             const PBRMaterial& mat = materials[prim.materialIndex];
             
             glUniform3fv(glGetUniformLocation(shader->ID, "objectColor"), 1, glm::value_ptr(glm::vec3(mat.baseColorFactor)));
+            glUniform1i(glGetUniformLocation(shader->ID, "useVertexColor"), 1);
             glUniform1f(glGetUniformLocation(shader->ID, "metallicValue"), mat.metallicFactor);
             glUniform1f(glGetUniformLocation(shader->ID, "roughnessValue"), mat.roughnessFactor);
             glUniform1f(glGetUniformLocation(shader->ID, "aoValue"), 1.0f);

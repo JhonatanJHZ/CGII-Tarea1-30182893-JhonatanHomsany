@@ -1,0 +1,11 @@
+Model Information:
+* title:	LowPoly PS1/N64 Style Link (Zelda)
+* source:	https://sketchfab.com/3d-models/lowpoly-ps1n64-style-link-zelda-c54fc91c1a2b46d5aacef14f2df80b03
+* author:	ps1guy (https://sketchfab.com/ps1guy)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "LowPoly PS1/N64 Style Link (Zelda)" (https://sketchfab.com/3d-models/lowpoly-ps1n64-style-link-zelda-c54fc91c1a2b46d5aacef14f2df80b03) by ps1guy (https://sketchfab.com/ps1guy) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

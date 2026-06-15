@@ -1,6 +1,7 @@
 #version 330 core
 out vec4 FragColor;
 
+in vec4 VertexColor;
 in vec3 Normal;
 in vec3 FragPos;
 in vec3 LocalPos;
@@ -8,6 +9,7 @@ in vec2 TexCoord;
 in vec4 FragPosLightSpace; 
 
 uniform vec3 objectColor;
+uniform bool useVertexColor;
 uniform vec3 viewPos;
 uniform vec3 lightPos;
 uniform vec3 lightColor;
@@ -197,8 +199,11 @@ void main() {
     }
 
     vec3 finalObjectColor = objectColor;
+    if (useVertexColor) {
+        finalObjectColor *= VertexColor.rgb;
+    }
     if (hasAlbedoMap) {
-        finalObjectColor = texture(albedoMap, uv).rgb;
+        finalObjectColor *= texture(albedoMap, uv).rgb;
     }
 
     vec3 albedo = pow(finalObjectColor, vec3(2.2));

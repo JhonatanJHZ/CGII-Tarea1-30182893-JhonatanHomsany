@@ -28,6 +28,7 @@ add_executable(Tarea1
     "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/tools/InputPicker.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/tools/ShadowManager.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/tools/TextureManager.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Tarea1-30182893-JhonatanHomsany/src/tools/tinyfiledialogs.c"
 )
 
 set_target_properties(Tarea1 PROPERTIES 
@@ -51,4 +52,6 @@ target_link_libraries(Tarea1 PRIVATE
     glm 
     tinygltf
     imgui_lib
+    Comdlg32
+    Ole32
 )

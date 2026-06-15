@@ -12,6 +12,8 @@
 #include "../../include/Camera.h"
 #include "../../include/tools/BasicShapesGenerator.h"
 #include "../../include/tools/ShadowManager.h"
+#include "../../include/tools/tinyfiledialogs.h"
+#include <cstring>
 using namespace std;
 void UIManager::addInstructionsUI(){
     ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), "Instrucciones");
@@ -145,81 +147,96 @@ void UIManager::addRaycastUI(Ray* ray){
 void UIManager::addFileManagementUI(Application* app, Scene* scene){
     ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.8f, 1.0f), "Gestion de Archivos de Escena");
     ImGui::Separator();
-    ImGui::InputText("Ruta Importar", importPathBuffer, IM_ARRAYSIZE(importPathBuffer));
     if (ImGui::Button("Importar Modelo GLTF/GLB", ImVec2(-FLT_MIN, 0))) {
-        GLTFManager* gltf = new GLTFManager();
-        if (gltf->loadModel(importPathBuffer)) {
-            gltf->setupGL();
-            SceneObject newObj;
-            std::string pathStr(importPathBuffer);
-            size_t lastSlash = pathStr.find_last_of("/\\");
-            std::string fileName = (lastSlash == std::string::npos) ? pathStr : pathStr.substr(lastSlash + 1);
-            newObj.name = fileName;
-            newObj.gltfPath = pathStr;
-            newObj.type = MeshType::GLTF;
-            newObj.meshPointer = gltf;
+        const char* filterPatterns[3] = { "*.gltf", "*.glb", "*.gdb" };
+        const char* path = tinyfd_openFileDialog("Importar Modelo", "", 3, filterPatterns, "Modelos 3D (*.gltf, *.glb, *.gdb)", 0);
+        if (path) {
+            strncpy(importPathBuffer, path, IM_ARRAYSIZE(importPathBuffer) - 1);
+            importPathBuffer[IM_ARRAYSIZE(importPathBuffer) - 1] = '\0';
+            GLTFManager* gltf = new GLTFManager();
+            if (gltf->loadModel(importPathBuffer)) {
+                gltf->setupGL();
+                SceneObject newObj;
+                std::string pathStr(importPathBuffer);
+                size_t lastSlash = pathStr.find_last_of("/\\");
+                std::string fileName = (lastSlash == std::string::npos) ? pathStr : pathStr.substr(lastSlash + 1);
+                newObj.name = fileName;
+                newObj.gltfPath = pathStr;
+                newObj.type = MeshType::GLTF;
+                newObj.meshPointer = gltf;
 
-            glm::vec3 minAABB(FLT_MAX);
-            glm::vec3 maxAABB(-FLT_MAX);
-            const auto& vertices = gltf->getVertices();
-            if (!vertices.empty()) {
-                for (const auto& v : vertices) {
-                    minAABB = glm::min(minAABB, v.position);
-                    maxAABB = glm::max(maxAABB, v.position);
+                glm::vec3 minAABB(FLT_MAX);
+                glm::vec3 maxAABB(-FLT_MAX);
+                const auto& vertices = gltf->getVertices();
+                if (!vertices.empty()) {
+                    for (const auto& v : vertices) {
+                        minAABB = glm::min(minAABB, v.position);
+                        maxAABB = glm::max(maxAABB, v.position);
+                    }
+                    glm::vec3 center = (minAABB + maxAABB) * 0.5f;
+                    glm::vec3 size = maxAABB - minAABB;
+                    float maxAxis = std::max(size.x, std::max(size.y, size.z));
+                    float scaleFactor = (maxAxis > 0.0f) ? (2.0f / maxAxis) : 1.0f;
+                    
+                    newObj.scale = glm::vec3(scaleFactor);
+                    newObj.pivotOffset = -center;
+                    newObj.position = glm::vec3(0.0f);
+                } else {
+                    newObj.position = glm::vec3(0.0f);
+                    newObj.scale = glm::vec3(1.0f);
+                    newObj.pivotOffset = glm::vec3(0.0f);
                 }
-                glm::vec3 center = (minAABB + maxAABB) * 0.5f;
-                glm::vec3 size = maxAABB - minAABB;
-                float maxAxis = std::max(size.x, std::max(size.y, size.z));
-                float scaleFactor = (maxAxis > 0.0f) ? (2.0f / maxAxis) : 1.0f;
-                
-                newObj.scale = glm::vec3(scaleFactor);
-                newObj.pivotOffset = -center;
-                newObj.position = glm::vec3(0.0f);
+                if (fileName == "jarron.glb") {
+                    newObj.position = glm::vec3(-2.15f, -7.25f, 0.00f);
+                    newObj.rotation = glm::vec3(-91.1f, 0.0f, 0.0f);
+                    newObj.scale = glm::vec3(0.06f, 0.06f, 0.06f);
+                    newObj.color = glm::vec3(1.0f, 1.0f, 1.0f); 
+                    newObj.metallicValue = 0.0f;
+                    newObj.roughnessValue = 0.5f;
+                    newObj.aoValue = 1.0f;
+                } else {
+                    newObj.rotation = glm::vec3(0.0f);
+                    newObj.color = glm::vec3(1.0f, 1.0f, 1.0f); 
+                    newObj.metallicValue = 0.0f;
+                    newObj.roughnessValue = 0.5f;
+                    newObj.aoValue = 1.0f;
+                }
+                scene->addObject(newObj);
+                selectedObjectIndex = (int)scene->objects.size() - 1;
+                std::cout << "Modelo importado con exito: " << importPathBuffer << std::endl;
             } else {
-                newObj.position = glm::vec3(0.0f);
-                newObj.scale = glm::vec3(1.0f);
-                newObj.pivotOffset = glm::vec3(0.0f);
+                delete gltf;
+                std::cerr << "Error al importar el modelo: " << importPathBuffer << std::endl;
             }
-            if (fileName == "jarron.glb") {
-                newObj.position = glm::vec3(-2.15f, -7.25f, 0.00f);
-                newObj.rotation = glm::vec3(-91.1f, 0.0f, 0.0f);
-                newObj.scale = glm::vec3(0.06f, 0.06f, 0.06f);
-                newObj.color = glm::vec3(1.0f, 1.0f, 1.0f); 
-                newObj.metallicValue = 0.0f;
-                newObj.roughnessValue = 0.5f;
-                newObj.aoValue = 1.0f;
-            } else {
-                newObj.rotation = glm::vec3(0.0f);
-                newObj.color = glm::vec3(1.0f, 1.0f, 1.0f); 
-                newObj.metallicValue = 0.0f;
-                newObj.roughnessValue = 0.5f;
-                newObj.aoValue = 1.0f;
-            }
-            scene->addObject(newObj);
-            selectedObjectIndex = (int)scene->objects.size() - 1;
-            std::cout << "Modelo importado con exito: " << importPathBuffer << std::endl;
-        } else {
-            delete gltf;
-            std::cerr << "Error al importar el modelo: " << importPathBuffer << std::endl;
         }
     }
     ImGui::Spacing();
-    ImGui::InputText("Ruta Guardar", savePathBuffer, IM_ARRAYSIZE(savePathBuffer));
     if (ImGui::Button("Guardar Escena (.scene)", ImVec2(-FLT_MIN, 0))) {
-        if (app->saveProject(savePathBuffer)) {
-            std::cout << "Escena guardada exitosamente en: " << savePathBuffer << std::endl;
-        } else {
-            std::cerr << "Error al guardar la escena en: " << savePathBuffer << std::endl;
+        const char* filterPatterns[1] = { "*.scene" };
+        const char* path = tinyfd_saveFileDialog("Guardar Escena", "", 1, filterPatterns, "Archivos de Escena");
+        if (path) {
+            strncpy(savePathBuffer, path, IM_ARRAYSIZE(savePathBuffer) - 1);
+            savePathBuffer[IM_ARRAYSIZE(savePathBuffer) - 1] = '\0';
+            if (app->saveProject(savePathBuffer)) {
+                std::cout << "Escena guardada exitosamente en: " << savePathBuffer << std::endl;
+            } else {
+                std::cerr << "Error al guardar la escena en: " << savePathBuffer << std::endl;
+            }
         }
     }
     ImGui::Spacing();
-    ImGui::InputText("Ruta Cargar", loadPathBuffer, IM_ARRAYSIZE(loadPathBuffer));
     if (ImGui::Button("Cargar Escena (.scene)", ImVec2(-FLT_MIN, 0))) {
-        if (app->loadProject(loadPathBuffer)) {
-            selectedObjectIndex = -1;
-            std::cout << "Escena cargada exitosamente desde: " << loadPathBuffer << std::endl;
-        } else {
-            std::cerr << "Error al cargar la escena desde: " << loadPathBuffer << std::endl;
+        const char* filterPatterns[1] = { "*.scene" };
+        const char* path = tinyfd_openFileDialog("Cargar Escena", "", 1, filterPatterns, "Archivos de Escena", 0);
+        if (path) {
+            strncpy(loadPathBuffer, path, IM_ARRAYSIZE(loadPathBuffer) - 1);
+            loadPathBuffer[IM_ARRAYSIZE(loadPathBuffer) - 1] = '\0';
+            if (app->loadProject(loadPathBuffer)) {
+                selectedObjectIndex = -1;
+                std::cout << "Escena cargada exitosamente desde: " << loadPathBuffer << std::endl;
+            } else {
+                std::cerr << "Error al cargar la escena desde: " << loadPathBuffer << std::endl;
+            }
         }
     }
 }

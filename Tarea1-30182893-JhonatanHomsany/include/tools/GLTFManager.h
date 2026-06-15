@@ -37,6 +37,7 @@ public:
     std::vector<PBRMaterial> materials;
     std::vector<unsigned int> glTextures;
     std::vector<Vertex> cachedVertices;
+    std::string modelPath;
 
     GLTFManager();
     ~GLTFManager();

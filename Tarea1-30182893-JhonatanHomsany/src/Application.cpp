@@ -349,7 +349,7 @@ void Application::updateAndRender() {
                         tri.v1 = glm::vec4(v1, 0.0f);
                         tri.v2 = glm::vec4(v2, 0.0f);
                         tri.normal = glm::vec4(normal, 0.0f);
-                        tri.color = glm::vec4(obj.color, 0.0f);
+                        tri.color = vertices[i].color * glm::vec4(obj.color, 1.0f);
                         tri.reflectivity = obj.reflectivity;
                         tri.transparency = obj.transparency;
                         tri.refractiveIndex = obj.refractiveIndex;
@@ -385,7 +385,7 @@ void Application::updateAndRender() {
                     glUniform1i(glGetUniformLocation(raytraceShader->ID, (groupBase + ".count").c_str()), triCount - startIndex);
                     numMeshGroups++;
                 }
-            } else if (obj.shape == ShapeType::NONE && obj.type == MeshType::REVOLUTION_SOLID && obj.meshPointer != nullptr) {
+            } else if ((obj.shape == ShapeType::NONE || obj.shape == ShapeType::PYRAMID) && obj.type == MeshType::REVOLUTION_SOLID && obj.meshPointer != nullptr){
                 glm::mat4 model = obj.getModelMatrix();
                 const auto& vertices = static_cast<Mesh*>(obj.meshPointer)->getVertices();
                 if (!vertices.empty() && numMeshGroups < 10) {
@@ -774,8 +774,6 @@ bool Application::loadProject(const std::string& filepath) {
                         verts = BasicShapesGenerator::generatePyramid(1.0f, 1.0f);
                         break;
                     default:
-                        // If shape is NONE, we might not have the original points, 
-                        // fallback to a cube so it's not invisible.
                         verts = BasicShapesGenerator::generateCube(1.0f, false);
                         break;
                 }

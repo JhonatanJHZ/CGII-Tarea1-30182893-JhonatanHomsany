@@ -130,6 +130,7 @@ void Scene::draw(const Shader* shader, const Renderer* renderer,
         if (obj.type == MeshType::GLTF) {
             renderer->render(static_cast<const GLTFManager*>(obj.meshPointer), shader, modelMatrix, view, projection);
         } else if (obj.type == MeshType::REVOLUTION_SOLID) {
+            glUniform1i(glGetUniformLocation(shader->ID, "useVertexColor"), 0);
             renderer->render(static_cast<const Mesh*>(obj.meshPointer), shader, modelMatrix, view, projection);
         }
     }
