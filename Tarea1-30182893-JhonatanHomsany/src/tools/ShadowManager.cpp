@@ -5,6 +5,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "../include/Mesh.h"
 #include "../include/tools/GLTFManager.h"
+#include <glm/gtc/type_ptr.hpp>
+
 ShadowMode ShadowManager::mode = ShadowMode::PLANAR;
 ShadowMappingType ShadowManager::shadowMappingType = ShadowMappingType::DIRECTIONAL;
 float ShadowManager::biasForShadowMapping = 0.0001f;
@@ -139,4 +141,90 @@ glm::mat4 ShadowManager::renderShadowMap(const Scene* scene, const Shader* shado
     glDisable(GL_CULL_FACE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     return lightSpaceMatrix;
+}
+
+void ShadowManager::renderShadowVolumes(const Scene* scene, const Shader* flatShader, const Shader* volumeShader, const Renderer* renderer, const glm::vec3& lightPos, const glm::mat4& view, const glm::mat4& projection) {
+    if (!scene || !flatShader || !volumeShader || !renderer) return;
+
+    glEnable(GL_STENCIL_TEST);
+    glStencilMask(0xFF); 
+    glClear(GL_STENCIL_BUFFER_BIT); 
+
+    glStencilFunc(GL_ALWAYS, 0, 0xFF); 
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); 
+    glDepthMask(GL_FALSE); 
+    glEnable(GL_DEPTH_CLAMP); 
+    glStencilFunc(GL_ALWAYS, 0, 0xFF); 
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); 
+    glDepthMask(GL_FALSE); 
+    glEnable(GL_DEPTH_CLAMP); 
+    glDepthFunc(GL_LEQUAL); 
+    glDisable(GL_CULL_FACE);
+    glStencilOpSeparate(GL_BACK, GL_KEEP, GL_INCR_WRAP, GL_KEEP); 
+    glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_DECR_WRAP, GL_KEEP); 
+
+    glUseProgram(volumeShader->ID);
+    glUniform3fv(glGetUniformLocation(volumeShader->ID, "lightPos"), 1, glm::value_ptr(lightPos));
+
+    for (const auto& obj : scene->objects) {
+        if (obj.name == "Piso" || obj.name == "Techo" || obj.name == "Pared Izquierda" || 
+            obj.name == "Pared Derecha" || obj.name == "Pared del Frente" || obj.name == "Pared Trasera") {
+            continue; 
+        }
+
+        glm::mat4 modelMatrix = obj.getModelMatrix();
+        if (obj.type == MeshType::GLTF) {
+            renderer->render(static_cast<const GLTFManager*>(obj.meshPointer), volumeShader, modelMatrix, view, projection);
+        } else if (obj.type == MeshType::REVOLUTION_SOLID) {
+            renderer->render(static_cast<const Mesh*>(obj.meshPointer), volumeShader, modelMatrix, view, projection);
+        }
+    }
+
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); 
+    glStencilFunc(GL_NOTEQUAL, 0, 0xFF); 
+    glStencilMask(0x00); 
+    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+    glEnable(GL_BLEND);
+    glUseProgram(flatShader->ID);
+    glUniform4f(glGetUniformLocation(flatShader->ID, "objectColor"), 0.1f, 0.1f, 0.1f, 0.7f); 
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_CLAMP); 
+
+    static unsigned int screenQuadVAO = 0;
+    static unsigned int screenQuadVBO;
+    if (screenQuadVAO == 0) {
+        float quadVertices[] = {
+            -1.0f,  1.0f, 0.0f,
+            -1.0f, -1.0f, 0.0f,
+             1.0f, -1.0f, 0.0f,
+            -1.0f,  1.0f, 0.0f,
+             1.0f, -1.0f, 0.0f,
+             1.0f,  1.0f, 0.0f
+        };
+        glGenVertexArrays(1, &screenQuadVAO);
+        glGenBuffers(1, &screenQuadVBO);
+        glBindVertexArray(screenQuadVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, screenQuadVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    }
+    
+    glm::mat4 identityMatrix = glm::mat4(1.0f);
+    glUniformMatrix4fv(glGetUniformLocation(flatShader->ID, "model"), 1, GL_FALSE, glm::value_ptr(identityMatrix));
+    glUniformMatrix4fv(glGetUniformLocation(flatShader->ID, "view"), 1, GL_FALSE, glm::value_ptr(identityMatrix));
+    glUniformMatrix4fv(glGetUniformLocation(flatShader->ID, "projection"), 1, GL_FALSE, glm::value_ptr(identityMatrix));
+    
+    glBindVertexArray(screenQuadVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+    glDisable(GL_STENCIL_TEST);
+    glDepthFunc(GL_LESS);
 }

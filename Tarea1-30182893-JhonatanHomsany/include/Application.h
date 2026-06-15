@@ -49,6 +49,7 @@ public:
     Shader* shader;
     Shader* flatShader;
     Shader* shadowDepthShader;
+    Shader* volumeShader;
     Scene* scene;
     vector<Camera*> cameras;
     int activeCameraIndex;

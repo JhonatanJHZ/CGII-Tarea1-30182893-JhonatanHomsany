@@ -284,7 +284,7 @@ void UIManager::addCameraUI(std::vector<Camera*>& cameras, int& activeCameraInde
 }
 void UIManager::addShadowModesUI(){
     ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Controles de sombras");
-    const char* shadowModes[] = { "Sin sombras", "Sombras Planares", "Shadow Mapping (FBO)" };
+    const char* shadowModes[] = { "Sin sombras", "Sombras Planares", "Shadow Mapping (FBO)", "Shadow Volumes" };
     int currentShadowMode = static_cast<int>(ShadowManager::mode);
     if (ImGui::Combo("Modo de Sombras", &currentShadowMode, shadowModes, IM_ARRAYSIZE(shadowModes))) {
         ShadowManager::mode = static_cast<ShadowMode>(currentShadowMode);

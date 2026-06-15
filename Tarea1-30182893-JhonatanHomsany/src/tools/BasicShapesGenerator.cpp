@@ -358,7 +358,7 @@ void BasicShapesGenerator::loadDefaultBoxScene(Scene* scene, Lighting* lighting,
 
     if (!lighting->lights.empty()) {
         Light& mainLight = lighting->lights[0];
-        mainLight.position = glm::vec3(0.6f, -4.0f, 4.0f); 
+        mainLight.position = glm::vec3(0.6f, -2.8f, 4.0f); 
         mainLight.color = glm::vec3(1.0f, 1.0f, 1.0f);     
         mainLight.intensity = 0.66f;                       
         mainLight.ambientIntensity = 0.12f;                 

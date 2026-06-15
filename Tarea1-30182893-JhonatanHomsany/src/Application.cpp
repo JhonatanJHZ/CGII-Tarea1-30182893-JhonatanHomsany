@@ -98,6 +98,8 @@ bool Application::init() {
     shader = new Shader("../../../Tarea1-30182893-JhonatanHomsany/shaders/default.vert", "../../../Tarea1-30182893-JhonatanHomsany/shaders/default.frag");
     flatShader = new Shader("../../../Tarea1-30182893-JhonatanHomsany/shaders/flat.vert", "../../../Tarea1-30182893-JhonatanHomsany/shaders/flat.frag");
     shadowDepthShader = new Shader("../../../Tarea1-30182893-JhonatanHomsany/shaders/shadowDepth.vert", "../../../Tarea1-30182893-JhonatanHomsany/shaders/shadowDepth.frag");
+    volumeShader = new Shader("../../../Tarea1-30182893-JhonatanHomsany/shaders/shadowVolume.vert", "../../../Tarea1-30182893-JhonatanHomsany/shaders/shadowVolume.frag", "../../../Tarea1-30182893-JhonatanHomsany/shaders/shadowVolume.geom");
+
     cameras.push_back(new Camera());
     activeCameraIndex = 0;
     uiManager = new UIManager(window);
@@ -175,12 +177,16 @@ void Application::updateAndRender() {
                 glm::vec3 lightPos = lighting->lights[0].position;
                 ShadowManager::renderPlanarShadows(scene, flatShader, renderer, lightPos, -8.0f, view, projection);
             }
-        }
-        if (ShadowManager::mode == ShadowMode::SHADOW_MAPPING && ShadowManager::showDepthMap) {
-            ImGui::Begin("Mapa de Profundidad (FBO)");
-            ImVec2 size = ImVec2(256.0f, 256.0f);
-            ImGui::Image((ImTextureID)(uintptr_t)ShadowManager::depthMapTexture, size, ImVec2(0, 1), ImVec2(1, 0));
-            ImGui::End();
+            else if (ShadowManager::mode == ShadowMode::SHADOW_MAPPING && ShadowManager::showDepthMap) {
+                ImGui::Begin("Mapa de Profundidad (FBO)");
+                ImVec2 size = ImVec2(256.0f, 256.0f);
+                ImGui::Image((ImTextureID)(uintptr_t)ShadowManager::depthMapTexture, size, ImVec2(0, 1), ImVec2(1, 0));
+                ImGui::End();
+            }
+            else if (ShadowManager::mode == ShadowMode::SHADOW_VOLUMES){
+                glm::vec3 lightPos = lighting->lights[0].position;
+                ShadowManager::renderShadowVolumes(scene, flatShader, volumeShader, renderer, lightPos, view, projection);
+            }
         }
     } else if(activeCamera->getRenderMode() == RenderMode::RAY_TRACING) {
         glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);

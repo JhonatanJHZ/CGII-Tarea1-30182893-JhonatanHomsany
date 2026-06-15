@@ -6,7 +6,8 @@ class Renderer;
 enum class ShadowMode{
     NONE = 0,
     PLANAR = 1,
-    SHADOW_MAPPING = 2
+    SHADOW_MAPPING = 2,
+    SHADOW_VOLUMES = 3
 };
 enum class ShadowMappingType{
     DIRECTIONAL = 0,
@@ -31,4 +32,5 @@ public:
     static glm::mat4 getShadowProjectionMatrix(const glm::vec3& lightPos, float groundHeight);
     static void renderPlanarShadows(const Scene* scene, const Shader* flatShader, const Renderer* renderer, const glm::vec3& lightPos, float groundHeight, const glm::mat4& view, const glm::mat4& projection);
     static glm::mat4 renderShadowMap(const Scene* scene, const Shader* shadowDepthShader, const Renderer* renderer, const glm::vec3& lightPos);
+    static void renderShadowVolumes(const Scene* scene, const Shader* flatShader, const Shader* volumeShader, const Renderer* renderer, const glm::vec3& lightPos, const glm::mat4& view, const glm::mat4& projection);
 };
