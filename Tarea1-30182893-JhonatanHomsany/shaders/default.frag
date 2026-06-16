@@ -140,30 +140,7 @@ mat3 calculateTBN(vec3 normal, vec3 pos, vec2 uv) {
     return mat3(T, B, N);
 }
 
-float DistributionGGX(vec3 N, vec3 H, float roughness) {
-    float a = roughness * roughness;
-    float a2 = a * a;
-    float NdotH = max(dot(N, H), 0.0);
-    float NdotH2 = NdotH * NdotH;
-    float num = a2;
-    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    denom = 3.14159265 * denom * denom;
-    return num / max(denom, 0.0001);
-}
-float GeometrySchlickGGX(float NdotV, float roughness) {
-    float r = (roughness + 1.0);
-    float k = (r * r) / 8.0;
-    float num = NdotV;
-    float denom = NdotV * (1.0 - k) + k;
-    return num / max(denom, 0.0001);
-}
-float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
-    float NdotV = max(dot(N, V), 0.0);
-    float NdotL = max(dot(N, L), 0.0);
-    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
-    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
-    return ggx1 * ggx2;
-}
+
 vec3 fresnelSchlick(float cosTheta, vec3 F0) {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
@@ -241,11 +218,12 @@ void main() {
         float spec = pow(max(dot(N, halfwayDir), 0.0), shininess);
         specular = F * (spec * specularStrength) / max(NdotL, 0.0001);
     } else {
-        float NDF = DistributionGGX(N, halfwayDir, roughness);   
-        float G   = GeometrySmith(N, viewDir, lightDir, roughness);      
-        vec3 numerator    = NDF * G * F;
-        float denominator = 4.0 * NdotV * NdotL + 0.0001; 
-        specular = numerator / denominator;
+        float pbrShininess = mix(256.0, 2.0, roughness);
+        float spec = pow(max(dot(N, halfwayDir), 0.0), pbrShininess);
+        
+        float energyConservation = (8.0 + pbrShininess) / (8.0 * PI);
+        
+        specular = F * spec * energyConservation * (1.0 - roughness);
     }
     
     vec3 Lo = (diffuse + specular) * lightColor * lightIntensity * NdotL;
